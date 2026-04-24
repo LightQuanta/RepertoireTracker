@@ -27,6 +27,7 @@
     "globals": "^17.5.0",
     "typescript-eslint": "^8.59.0",
     "unocss": "^66.6.8",
-    "unplugin-auto-import": "^21.0.0"
+    "unplugin-auto-import": "^21.0.0",
+    "vite-plugin-mock-dev-server": "^2.1.1"
   }
 }
