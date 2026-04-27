@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # auto-imports.d.ts
 auto-imports.d.ts
+
+# custom user data
+custom/
