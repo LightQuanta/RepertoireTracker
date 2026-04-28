@@ -5,7 +5,7 @@ import { z } from 'astro/zod'
  * @param path 配置文件路径
  * @param schema 配置文件zodObject（必须确保所有字段都有默认值或为可选值！）
  */
-const createConfigLoader = <T extends z.ZodRawShape>(path: string, schema: z.ZodObject<T>) => async () => {
+const createConfigLoader = <T extends z.ZodObject<any>>(path: string, schema: T) => async () => {
     try {
         const config = await import(/* @vite-ignore */ path)
 
