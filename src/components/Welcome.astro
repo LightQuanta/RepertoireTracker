@@ -2,10 +2,15 @@
 import astroLogo from "../assets/astro.svg";
 import background from "../assets/background.svg";
 import Test from "./Test.vue";
+
+import { createAstroComponentLoader } from "./componentLoader.ts";
+const loader = createAstroComponentLoader("/src/components/AAA.astro");
+const AAA = await loader();
 ---
 
 <div id="container">
 	<img id="background" src={background.src} alt="" fetchpriority="high" />
+	<AAA />
 	<Test client:load />
 	<main>
 		<section id="hero">

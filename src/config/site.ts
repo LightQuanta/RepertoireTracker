@@ -1,5 +1,5 @@
 import { z } from 'astro/zod'
-import { createConfigLoader } from './configProcesser'
+import { createConfigLoader } from './configLoader'
 
 // 站点配置文件
 const siteConfigSchema = z.object({
