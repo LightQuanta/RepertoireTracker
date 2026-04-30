@@ -1,12 +1,11 @@
 import type { AstroInstance } from "astro"
 
-const components = import.meta.glob('**/*.astro')
+const components = import.meta.glob('**/*.astro', { eager: true })
 
-// TODO 导入的astro组件不支持vite HMR
 const createAstroComponentLoader = <T extends AstroInstance>(path: string) => async () => {
     if (components[path]) {
-        const loader = components[path]() as Promise<T>
-        return (await loader).default
+        const loader = components[path] as T
+        return loader.default
     }
     throw new Error(`Component not found: ${path}`)
 }
