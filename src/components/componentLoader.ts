@@ -1,6 +1,8 @@
 import type { AstroInstance } from "astro"
 
-const components = import.meta.glob('**/*.astro', { eager: true })
+const components = import.meta.glob('/**/*.astro', { eager: true })
+
+// console.log(Object.keys(components))
 
 const createAstroComponentLoader = <T extends AstroInstance>(path: string) => async () => {
     if (components[path]) {
