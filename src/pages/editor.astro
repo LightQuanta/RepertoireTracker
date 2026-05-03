@@ -1,0 +1,9 @@
+---
+import TableSongList from "@/components/songlist/TableSongList.vue";
+import Layout from "@/layouts/Layout.astro";
+---
+
+<Layout>
+    <a href="/">首页</a>
+    <TableSongList client:load />
+</Layout>
