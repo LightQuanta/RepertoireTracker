@@ -1,15 +1,15 @@
 <script setup lang=ts>
 import { getPropertySchema, songSchema } from '@schema/song'
 
-const songlist = ref(songSchema.parse({
-  songs: [{
-    id: '4c6ec2b1-fcbb-4d7f-a19e-ab0976ddef3d',
-    properties: {
-      title: 'Test Song',
-      artist: ['Test Artist'],
-    },
-  }],
-}))
+let url = '/data/songlist.json'
+if (import.meta.env.SSR) {
+  // TODO 有没有正常的方法获取dev server的host
+  url = `http://localhost:4321${url}`
+}
+
+// await fetch(url).then(d => d.json()).then(d => console.log(d))
+
+const songlist = ref(songSchema.parse(await fetch(url).then(d => d.json())))
 
 const displayProperties = computed(() => {
   return songlist.value.properties.filter(p => p.show ?? true)
@@ -27,7 +27,7 @@ const displayProperties = computed(() => {
     </div>
 
     <!-- 歌曲列表 -->
-    <div v-for="song in songlist.songs" :key="song.id" class="flex flex-row gap-2">
+    <div v-for="song in songlist?.songs ?? []" :key="song.id" class="flex flex-row gap-2">
       <!-- TODO 渲染为对应属性组件 -->
       <div v-for="property in displayProperties" :key="property.id" class="border border-black flex-1">
         {{ getPropertySchema(property).parse(song.properties[property.id]) }}
