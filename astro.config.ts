@@ -10,7 +10,9 @@ import vue from '@astrojs/vue'
 export default defineConfig({
   integrations: [
     vue(),
-    UnoCSS(),
+    UnoCSS({
+      injectReset: true // or a path to the reset file
+    }),
     AutoImport({
       imports: [
         'vue',
