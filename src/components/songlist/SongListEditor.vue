@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import 'element-plus/dist/index.css'
 import { z } from 'astro/zod'
+import { onStartTyping, refDebounced } from '@vueuse/core'
+import Fuse from 'fuse.js'
 
 import { getPropertySchema, songSchema } from '@schema/song'
 import {
@@ -26,6 +28,7 @@ const sourceUrl = import.meta.env.SSR
   : '/data/songlist.json'
 
 const songlist = ref(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
+// const songlist = ref(songSchema.parse(testSongData))
 const editingSongIds = ref(new Set<string>())
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined
@@ -140,6 +143,34 @@ onBeforeUnmount(() => {
     void flushSave()
   }
 })
+
+const searchInput = useTemplateRef('searchInput')
+onStartTyping(() => searchInput.value?.focus())
+
+const inputText = ref('')
+const debouncedSearchText = refDebounced(inputText, 200)
+
+// TODO fuse配置项
+const createFuseInstance = (songs: SongList['songs']) => new Fuse(songs, {
+  keys: songlist.value.properties
+    .filter(property => property.searchWeight > 0)
+    .map(property => 'properties.' + property.id),
+  threshold: 0.9,
+})
+
+const fuse = ref(createFuseInstance(songlist.value.songs))
+
+watch(songlist.value.songs, (newSongs) => {
+  fuse.value = createFuseInstance(newSongs)
+})
+
+// TODO 优化表格性能和展示效果
+const filteredSongs = computed(() => {
+  return debouncedSearchText.value.length === 0
+    ? songlist.value.songs
+    : fuse.value.search(debouncedSearchText.value).map(result => result.item)
+})
+
 </script>
 
 <template>
@@ -155,7 +186,9 @@ onBeforeUnmount(() => {
       </div>
     </header>
 
-    <el-table :data="songlist.songs" border row-key="id"
+    <el-input v-model="inputText" ref="searchInput" placeholder="搜索歌曲" class="mb-4" />
+
+    <el-table :data="filteredSongs" border row-key="id"
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
       :row-class-name="({ row }) => isEditing(row) ? 'is-editing-row' : ''">
       <el-table-column v-for="property in displayProperties" :key="property.id" :label="property.displayName"
@@ -163,6 +196,8 @@ onBeforeUnmount(() => {
         <template #default="{ row }">
           <div class="flex min-h-34px items-center" :class="shouldShowEditor(row, property) ? 'min-h-38px' : ''">
             <template v-if="shouldShowEditor(row, property)">
+
+              <component :is="ElSwitch" :aaa="111"></component>
 
               <!-- TODO 优化这一坨组件创建，使用PropertyComponent实现？ -->
               <el-switch v-if="property.type === 'boolean'" :model-value="editorValue(row, property) as boolean"
@@ -185,7 +220,7 @@ onBeforeUnmount(() => {
 
               <el-input v-else :model-value="editorValue(row, property) as string" clearable class="w-full"
                 placeholder="请输入" @update:model-value="value => updateValue(row, property, value)" />
-                
+
             </template>
 
             <template v-else-if="property.type === 'tags' && Array.isArray(displayValue(row, property))">

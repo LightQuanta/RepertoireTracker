@@ -33,6 +33,9 @@ const propertySchema = z.object({
     type: propertyType,
     // 默认值
     default: z.any().optional(),
+    // 搜索权重
+    // TODO 实装搜索权重
+    searchWeight: z.number().default(0),
 })
 
 // 自定义歌曲属性
@@ -41,35 +44,49 @@ const songPropertiesSchema = z.array(propertySchema).default([
         id: 'title',
         displayName: '标题',
         type: 'string',
+        searchWeight: 1,
     },
     {
         id: 'subtitle',
         displayName: '副标题',
         optional: true,
         type: 'string',
+        searchWeight: 0.5,
     },
     {
         id: 'alias',
         displayName: '别名',
         optional: true,
         type: 'tags',
+        searchWeight: 0.5,
     },
     {
         id: 'artist',
         displayName: '艺术家',
+        default: [],
         type: 'tags',
+        searchWeight: 0.5,
     },
     {
         id: 'language',
         displayName: '语言',
-        optional: true,
+        default: [],
         type: 'tags',
+        searchWeight: 0.2,
+    },
+    {
+        id: 'description',
+        displayName: '描述',
+        optional: true,
+        type: 'string',
+        searchWeight: 0.2,
     },
     {
         id: 'tags',
         displayName: '标签',
-        optional: true,
+        default: [],
         type: 'tags',
+        searchWeight: 0.2,
     },
     {
         id: 'count',
@@ -77,13 +94,15 @@ const songPropertiesSchema = z.array(propertySchema).default([
         optional: true,
         type: 'integer',
         default: 0,
+        searchWeight: 0,
     },
     {
         id: 'lastSingDate',
         displayName: '最近演唱',
         optional: true,
         type: 'date',
-    }
+        searchWeight: 0,
+    },
 ])
 
 // 歌曲配置文件
