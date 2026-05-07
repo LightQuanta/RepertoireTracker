@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import 'element-plus/dist/index.css'
 import { z } from 'astro/zod'
-import { onStartTyping, refDebounced } from '@vueuse/core'
+import { onKeyStroke, onStartTyping, refDebounced } from '@vueuse/core'
 import Fuse from 'fuse.js'
 
 import { songSchema } from '@schema/song'
 import {
   ElInput,
+  ElPagination,
   ElTable,
   ElTableColumn,
 } from 'element-plus'
@@ -49,6 +50,37 @@ const filteredSongs = computed(() => {
     ? songlist.value.songs
     : fuse.value.search(debouncedSearchText.value).map(result => result.item)
 })
+
+const currentPage = ref(1)
+const pageSize = ref(20)
+
+watch(debouncedSearchText, () => {
+  currentPage.value = 1
+})
+
+const paginatedSongs = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  return filteredSongs.value.slice(start, start + pageSize.value)
+})
+
+const totalPages = computed(() => Math.ceil(filteredSongs.value.length / pageSize.value))
+
+function goToPrevPage(e: KeyboardEvent) {
+  if (currentPage.value > 1) {
+    currentPage.value--
+    e.preventDefault()
+  }
+}
+
+function goToNextPage(e: KeyboardEvent) {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++
+    e.preventDefault()
+  }
+}
+
+onKeyStroke('ArrowLeft', goToPrevPage)
+onKeyStroke('ArrowRight', goToNextPage)
 </script>
 
 <template>
@@ -66,7 +98,7 @@ const filteredSongs = computed(() => {
 
     <el-input v-model="inputText" ref="searchInput" placeholder="搜索歌曲" class="mb-4" />
 
-    <el-table :data="filteredSongs" border row-key="id"
+    <el-table :data="paginatedSongs" border row-key="id"
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
       <el-table-column v-for="property in displayProperties" :key="property.id" :label="property.displayName"
         min-width="190" show-overflow-tooltip>
@@ -75,6 +107,13 @@ const filteredSongs = computed(() => {
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pagination-wrapper">
+      <!-- TODO 怎么改这玩意的文本？ -->
+      <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+        :total="filteredSongs.length" layout="sizes, prev, pager, next, jumper" background>
+      </el-pagination>
+    </div>
   </section>
 </template>
 
@@ -84,5 +123,24 @@ const filteredSongs = computed(() => {
   background: #f9fafb;
   color: #344054;
   font-weight: 650;
+}
+
+.song-list-table :deep(.el-table__body-wrapper) {
+  overflow-x: auto;
+  min-height: 440px;
+}
+
+.pagination-wrapper {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  padding: 12px 16px;
+  margin-top: -1px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 -4px 12px rgb(0 0 0 / 4%);
 }
 </style>
