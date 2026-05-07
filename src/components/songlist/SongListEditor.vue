@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import 'element-plus/dist/index.css'
 import { z } from 'astro/zod'
-import { onKeyStroke, onStartTyping, refDebounced } from '@vueuse/core'
+import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
 import Fuse from 'fuse.js'
 
 import { songSchema } from '@schema/song'
@@ -20,9 +20,9 @@ const sourceUrl = import.meta.env.SSR
   : '/data/songlist.json'
 
 const songlist = ref(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
-
 const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
 
+// 搜索处理
 const searchInput = useTemplateRef('searchInput')
 onStartTyping(() => searchInput.value?.focus())
 
@@ -39,21 +39,52 @@ const createFuseInstance = (songs: SongList['songs']) => new Fuse(songs, {
   threshold: 0.9,
 })
 
-const fuse = ref(createFuseInstance(songlist.value.songs))
+const songs = computed(() => songlist.value?.songs ?? [])
+const fuse = ref(createFuseInstance(songs.value))
 
-watch(songlist.value.songs, (newSongs) => {
+watch(songs.value, (newSongs) => {
   fuse.value = createFuseInstance(newSongs)
 })
 
-const filteredSongs = computed(() => {
-  return debouncedSearchText.value.length === 0
-    ? songlist.value.songs
-    : fuse.value.search(debouncedSearchText.value).map(result => result.item)
-})
+const filteredSongs = computed(() => debouncedSearchText.value.length === 0
+  ? songs.value
+  : fuse.value.search(debouncedSearchText.value).map(result => result.item)
+)
 
 const currentPage = ref(1)
 const pageSize = ref(20)
 
+// 搜索参数处理
+const params = useUrlSearchParams('history')
+const q = params.q
+
+if (q) {
+  inputText.value = typeof q === 'string' ? q : q[0] ?? ''
+}
+
+watch(debouncedSearchText, (val) => {
+  if (val.length === 0) {
+    delete params.q
+  } else {
+    params.q = val
+  }
+})
+
+const p = params.page
+if (p) {
+  const n = Number(typeof p === 'string' ? p : p[0])
+  if (Number.isFinite(n)) currentPage.value = n
+}
+
+watch(currentPage, (val) => {
+  if (val === 1) {
+    delete params.page
+  } else {
+    params.page = String(val)
+  }
+})
+
+// 分页处理
 watch(debouncedSearchText, () => {
   currentPage.value = 1
 })
@@ -91,7 +122,7 @@ onKeyStroke('ArrowRight', goToNextPage)
           歌单编辑
         </h1>
         <p class="mt-1.5 text-13px text-#667085">
-          {{ songlist.songs.length }} 首歌曲 · {{ displayProperties.length }} 个展示字段
+          {{ songs.length }} 首歌曲 · {{ displayProperties.length }} 个展示字段
         </p>
       </div>
     </header>
