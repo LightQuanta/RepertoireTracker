@@ -31,7 +31,10 @@ const debouncedSearchText = refDebounced(inputText, 200)
 const createFuseInstance = (songs: SongList['songs']) => new Fuse(songs, {
   keys: songlist.value.properties
     .filter(property => property.searchWeight > 0)
-    .map(property => 'properties.' + property.id),
+    .map(property => ({
+      name: 'properties.' + property.id,
+      weight: property.searchWeight,
+    })),
   threshold: 0.9,
 })
 
@@ -68,10 +71,7 @@ const filteredSongs = computed(() => {
       <el-table-column v-for="property in displayProperties" :key="property.id" :label="property.displayName"
         min-width="190" show-overflow-tooltip>
         <template #default="{ row }">
-          <PropertyComponent
-            :property="property"
-            :value="row.properties[property.id] ?? property.default"
-          />
+          <PropertyComponent :property="property" :value="row.properties[property.id] ?? property.default" />
         </template>
       </el-table-column>
     </el-table>

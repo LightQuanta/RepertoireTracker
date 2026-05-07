@@ -28,7 +28,6 @@ const propertySchema = z.object({
     // 默认值
     default: z.any().optional(),
     // 搜索权重
-    // TODO 实装搜索权重
     searchWeight: z.number().default(0),
 })
 
