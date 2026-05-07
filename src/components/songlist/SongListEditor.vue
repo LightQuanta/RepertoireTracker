@@ -129,10 +129,10 @@ onKeyStroke('ArrowRight', goToNextPage)
 
     <el-input v-model="inputText" ref="searchInput" placeholder="搜索歌曲" class="mb-4" />
 
-    <el-table :data="paginatedSongs" border row-key="id"
+    <el-table :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
-      <el-table-column v-for="property in displayProperties" :key="property.id" :label="property.displayName"
-        min-width="190" show-overflow-tooltip>
+      <el-table-column v-for="(property, index) in displayProperties" :key="property.id" :label="property.displayName"
+        min-width="190" show-overflow-tooltip :fixed="index === 0" :class="index % 2 == 0 ? 'text-red' : 'text-blue'">
         <template #default="{ row }">
           <PropertyComponent :property="property" :value="row.properties[property.id] ?? property.default" />
         </template>

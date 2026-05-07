@@ -9,7 +9,9 @@ import vue from '@astrojs/vue'
 // https://astro.build/config
 export default defineConfig({
   integrations: [
-    vue(),
+    vue({
+      appEntrypoint: './src/plugins/vue-app.ts',
+    }),
     UnoCSS({
       injectReset: true // or a path to the reset file
     }),

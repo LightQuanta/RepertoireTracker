@@ -20,6 +20,7 @@ const createConfigLoader = <T extends z.ZodObject<any>>(path: string, schema: T)
             const fs = await import('fs')
             config = JSON.parse(fs.readFileSync(absolutePath.substring('file:///'.length), 'utf-8'))
         } else {
+            // TODO 没有的时候能不能别报错刷屏了？
             config = await import(/* @vite-ignore */ absolutePath)
         }
 
