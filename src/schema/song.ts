@@ -2,22 +2,16 @@ import { z } from 'astro/zod'
 const types = ['string', 'integer', 'float', 'boolean', 'tags', 'date'] as const
 const propertyType = z.enum(types)
 
+type PropertyKeys = typeof types[number]
+
 // 自定义歌曲属性类型映射
-const typeMap: Record<typeof types[number], z.ZodType> = {
+const typeMap: Record<PropertyKeys, z.ZodType> = {
     string: z.string(),
     integer: z.int(),
     float: z.number(),
     boolean: z.boolean(),
     tags: z.array(z.string()),
     date: z.date(),
-}
-
-function getPropertySchema(property: z.infer<typeof propertySchema>): z.ZodType<any> {
-    const type = typeMap[property.type as typeof types[number]]
-    if (property.optional ?? false) {
-        return type.optional()
-    }
-    return type
 }
 
 const propertySchema = z.object({
@@ -37,6 +31,16 @@ const propertySchema = z.object({
     // TODO 实装搜索权重
     searchWeight: z.number().default(0),
 })
+
+type PropertyType = z.infer<typeof propertySchema>
+
+function getPropertySchema(property: PropertyType): z.ZodType<any> {
+    const type = typeMap[property.type]
+    if (property.optional ?? false) {
+        return type.optional()
+    }
+    return type
+}
 
 // 自定义歌曲属性
 const songPropertiesSchema = z.array(propertySchema).default([
@@ -119,4 +123,5 @@ const songSchema = z.object({
     })).default([]),
 })
 
-export { songSchema, propertySchema, getPropertySchema }
+export { types, songSchema, propertySchema, getPropertySchema }
+export type { PropertyKeys, PropertyType }
