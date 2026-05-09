@@ -24,7 +24,53 @@ const displayProperties = computed(() => songlist.value.properties.filter(proper
 
 // 搜索处理
 const searchInput = useTemplateRef('searchInput')
-onStartTyping(() => searchInput.value?.focus())
+
+function focusSearchInput() {
+  searchInput.value?.focus()
+}
+
+// 英文数字输入
+onStartTyping(focusSearchInput)
+
+// Ctrl + K / F
+onKeyStroke(['k', 'f'], (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    focusSearchInput()
+  }
+})
+
+// 空格, /, Enter, Backspace
+onKeyStroke([' ', '/', 'Enter', 'Backspace'], (e) => {
+  if (!isFocusedElementEditable()) {
+    e.preventDefault()
+    focusSearchInput()
+  }
+})
+
+// https://github.com/vueuse/vueuse/blob/99c5df9a1017733046b496a6bb585d9fed7fbe8f/packages/core/onStartTyping/index.ts#L6-L26
+// Copyright (c) 2019-PRESENT Anthony Fu<https://github.com/antfu>
+// Licensed under the MIT License.
+function isFocusedElementEditable() {
+  const { activeElement, body } = document
+
+  if (!activeElement)
+    return false
+
+  // If not element has focus, we assume it is not editable, too.
+  if (activeElement === body)
+    return false
+
+  // Assume <input> and <textarea> elements are editable.
+  switch (activeElement.tagName) {
+    case 'INPUT':
+    case 'TEXTAREA':
+      return true
+  }
+
+  // Check if any other focused element id editable.
+  return activeElement.hasAttribute('contenteditable')
+}
 
 const inputText = ref('')
 const debouncedSearchText = refDebounced(inputText, 200)
@@ -127,7 +173,7 @@ onKeyStroke('ArrowRight', goToNextPage)
       </div>
     </header>
 
-    <el-input v-model="inputText" ref="searchInput" placeholder="搜索歌曲" class="mb-4" />
+    <el-input v-model="inputText" ref="searchInput" autofocus placeholder="搜索歌曲" class="mb-4" />
 
     <el-table :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
