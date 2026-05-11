@@ -16,7 +16,7 @@ const displayTags = computed(() => {
 
 <template>
   <div class="song-list-tags flex max-w-full items-center gap-1.5 overflow-hidden">
-    <el-tag v-for="tag in displayTags" :key="tag" size="small" effect="plain">
+    <el-tag v-for="tag in displayTags" size="small" effect="plain" :disable-transitions="true">
       {{ tag }}
     </el-tag>
     <span v-if="displayTags.length === 0" class="text-#98a2b3">
