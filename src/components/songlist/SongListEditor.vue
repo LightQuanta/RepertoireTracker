@@ -184,7 +184,8 @@ onKeyStroke('ArrowRight', goToNextPage)
     <el-table :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
       <el-table-column v-for="(property, index) in displayProperties" :key="property.id" :label="property.displayName"
-        min-width="190" show-overflow-tooltip :fixed="index === 0" :class="index % 2 == 0 ? 'text-red' : 'text-blue'">
+        min-width="190" show-overflow-tooltip :fixed="index === 0">
+        <!-- TODO 自定义固定列 -->
         <template #default="{ row: song }">
           <PropertyComponent :property="property" :value="song.properties[property.id] ?? property.default" />
         </template>
