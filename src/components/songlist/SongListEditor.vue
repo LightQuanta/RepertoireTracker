@@ -2,7 +2,6 @@
 import 'element-plus/dist/index.css'
 import { z } from 'astro/zod'
 import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
-import Fuse from 'fuse.js'
 
 import { songSchema } from '@schema/song'
 import {
@@ -12,6 +11,7 @@ import {
   ElTableColumn,
 } from 'element-plus'
 import PropertyComponent from './PropertyComponent.vue'
+import { useFuse, type UseFuseOptions } from '@vueuse/integrations/useFuse'
 
 type SongList = z.infer<typeof songSchema>
 
@@ -19,7 +19,7 @@ const sourceUrl = import.meta.env.SSR
   ? 'http://localhost:4321/data/songlist.json'
   : '/data/songlist.json'
 
-const songlist = ref(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
+const songlist = shallowRef(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
 const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
 
 // 搜索处理
@@ -45,6 +45,15 @@ onKeyStroke([' ', '/', 'Enter', 'Backspace'], (e) => {
   if (!isFocusedElementEditable()) {
     e.preventDefault()
     focusSearchInput()
+  }
+})
+
+// Ctrl + A
+onKeyStroke('a', (e) => {
+  if (e.ctrlKey || e.metaKey) {
+    e.preventDefault()
+    focusSearchInput()
+    searchInput.value?.select()
   }
 })
 
@@ -75,27 +84,24 @@ function isFocusedElementEditable() {
 const inputText = ref('')
 const debouncedSearchText = refDebounced(inputText, 200)
 
-const createFuseInstance = (songs: SongList['songs']) => new Fuse(songs, {
-  keys: songlist.value.properties
-    .filter(property => property.searchWeight > 0)
-    .map(property => ({
-      name: 'properties.' + property.id,
-      weight: property.searchWeight,
-    })),
-  threshold: 0.9,
-})
-
 const songs = computed(() => songlist.value?.songs ?? [])
-const fuse = ref(createFuseInstance(songs.value))
 
-watch(songs.value, (newSongs) => {
-  fuse.value = createFuseInstance(newSongs)
-})
+const fuseOptions = computed(() => ({
+  fuseOptions: {
+    keys: songlist.value.properties
+      .filter(property => property.searchWeight > 0)
+      .map(property => ({
+        name: 'properties.' + property.id,
+        weight: property.searchWeight,
+      })),
+    isCaseSensitive: false,
+    threshold: 0.9,
+  },
+  matchAllWhenSearchEmpty: true,
+} as UseFuseOptions<SongList['songs'][0]>))
 
-const filteredSongs = computed(() => debouncedSearchText.value.length === 0
-  ? songs.value
-  : fuse.value.search(debouncedSearchText.value).map(result => result.item)
-)
+const fuse = useFuse(debouncedSearchText, songs, fuseOptions)
+const filteredSongs = computed(() => fuse.results.value.map(result => result.item))
 
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -179,8 +185,8 @@ onKeyStroke('ArrowRight', goToNextPage)
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
       <el-table-column v-for="(property, index) in displayProperties" :key="property.id" :label="property.displayName"
         min-width="190" show-overflow-tooltip :fixed="index === 0" :class="index % 2 == 0 ? 'text-red' : 'text-blue'">
-        <template #default="{ row }">
-          <PropertyComponent :property="property" :value="row.properties[property.id] ?? property.default" />
+        <template #default="{ row: song }">
+          <PropertyComponent :property="property" :value="song.properties[property.id] ?? property.default" />
         </template>
       </el-table-column>
     </el-table>

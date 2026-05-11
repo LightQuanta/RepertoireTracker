@@ -16,6 +16,7 @@
     "@antfu/eslint-config": "^8.2.0",
     "@astrojs/vue": "^6.0.1",
     "@vueuse/core": "^14.3.0",
+    "@vueuse/integrations": "^14.3.0",
     "astro": "^6.1.9",
     "element-plus": "^2.13.7",
     "fuse.js": "^7.3.0",
