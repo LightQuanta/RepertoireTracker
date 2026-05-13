@@ -15,7 +15,7 @@ const displayTags = computed(() => {
 </script>
 
 <template>
-  <div class="song-list-tags flex max-w-full items-center gap-1.5 overflow-hidden">
+  <div class="flex max-w-full items-center gap-1.5 overflow-hidden">
     <el-tag v-for="tag in displayTags" size="small" effect="plain" :disable-transitions="true">
       {{ tag }}
     </el-tag>
@@ -24,15 +24,3 @@ const displayTags = computed(() => {
     </span>
   </div>
 </template>
-
-<style scoped>
-.song-list-tags :deep(.el-tag) {
-  max-width: 92px;
-}
-
-.song-list-tags :deep(.el-tag__content) {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-</style>
