@@ -200,6 +200,7 @@ const paginatedSongs = computed(() => {
 const totalPages = computed(() => Math.ceil(filteredSongs.value.length / pageSize.value))
 
 function goToPrevPage(e: KeyboardEvent) {
+  if (isFocusedElementEditable()) return
   if (currentPage.value > 1) {
     currentPage.value--
     e.preventDefault()
@@ -207,6 +208,7 @@ function goToPrevPage(e: KeyboardEvent) {
 }
 
 function goToNextPage(e: KeyboardEvent) {
+  if (isFocusedElementEditable()) return
   if (currentPage.value < totalPages.value) {
     currentPage.value++
     e.preventDefault()
