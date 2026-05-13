@@ -7,8 +7,10 @@ import { songSchema } from '@schema/song'
 import {
   ElInput,
   ElPagination,
+  ElSwitch,
   ElTable,
   ElTableColumn,
+  ElTooltip,
 } from 'element-plus'
 import PropertyComponent from './PropertyComponent.vue'
 import { useFuse, type UseFuseOptions } from '@vueuse/integrations/useFuse'
@@ -101,7 +103,56 @@ const fuseOptions = computed(() => ({
 } as UseFuseOptions<SongList['songs'][0]>))
 
 const fuse = useFuse(debouncedSearchText, songs, fuseOptions)
-const filteredSongs = computed(() => fuse.results.value.map(result => result.item))
+
+const searchMethod = ref<'fuse' | 'contains'>('fuse')
+const searchDuration = ref(0)
+const searchPerformed = ref(false)
+
+const containsFilteredSongs = computed(() => {
+  const text = debouncedSearchText.value.trim()
+
+  if (!text) {
+    return songs.value
+  }
+
+  const tokens = text.toLowerCase().split(/\s+/).filter(Boolean)
+  const searchablePropertyIds = songlist.value.properties
+    .filter(p => p.searchWeight > 0)
+    .map(p => p.id)
+
+  return songs.value.filter(song =>
+    tokens.some(token =>
+      searchablePropertyIds.some(id => {
+        const value = song.properties[id]
+        return value != null && String(value).toLowerCase().includes(token)
+      }),
+    ),
+  )
+})
+
+const filteredSongs = computed(() => {
+  const text = debouncedSearchText.value.trim()
+
+  if (!text) {
+    searchDuration.value = 0
+    searchPerformed.value = false
+    return songs.value
+  }
+
+  searchPerformed.value = true
+
+  if (searchMethod.value === 'contains') {
+    const start = performance.now()
+    const result = containsFilteredSongs.value
+    searchDuration.value = performance.now() - start
+    return result
+  }
+
+  const start = performance.now()
+  const results = fuse.results.value.map(r => r.item)
+  searchDuration.value = performance.now() - start
+  return results
+})
 
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -174,12 +225,21 @@ onKeyStroke('ArrowRight', goToNextPage)
           歌单编辑
         </h1>
         <p class="mt-1.5 text-13px text-#667085">
-          {{ songs.length }} 首歌曲 · {{ displayProperties.length }} 个展示字段
+          <template v-if="searchPerformed">已展示 {{ filteredSongs.length }} / {{ songs.length }} 首歌曲 · 搜索用时 {{
+            searchDuration < 1 ? '<1' : Math.round(searchDuration) }}ms</template>
+              <template v-else>共 {{ songs.length }} 首歌曲</template>
         </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <el-tooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
+          <el-switch v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
+            inactive-text="分词匹配" inline-prompt class="search-method-switch" />
+        </el-tooltip>
       </div>
     </header>
 
-    <el-input v-model="inputText" ref="searchInput" autofocus placeholder="搜索歌曲" class="mb-4" />
+    <el-input v-model="inputText" ref="searchInput" autofocus placeholder="搜索歌曲" class="mb-4" maxlength="50" clearable
+      show-word-limit />
 
     <el-table :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
