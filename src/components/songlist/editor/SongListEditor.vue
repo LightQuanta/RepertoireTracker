@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import type { PropertyType } from '@schema/song'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import type { z } from 'astro/zod'
 import PropertyComponent from '@components/songlist/PropertyComponent.vue'
 import PropertyEditorDialog from '@components/songlist/PropertyEditorDialog.vue'
+import PropertySchemaEditorDialog from '@components/songlist/PropertySchemaEditorDialog.vue'
 import { songSchema } from '@schema/song'
 
 import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
@@ -24,7 +26,8 @@ const sourceUrl = import.meta.env.SSR
   ? 'http://localhost:4321/data/songlist.json'
   : '/data/songlist.json'
 
-const songlist = shallowRef(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
+// TODO 性能优化？
+const songlist = ref(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
 const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
 
 // 搜索处理
@@ -267,6 +270,29 @@ function deleteSelectedSongs() {
   selectedSongs.value = []
   tableRef.value?.clearSelection()
 }
+
+// 属性定义管理
+const schemaDialogVisible = ref(false)
+
+function handlePropertiesUpdate(newProperties: PropertyType[]) {
+  const oldIds = new Set(songlist.value.properties.map(p => p.id))
+  const newIds = new Set(newProperties.map(p => p.id))
+
+  for (const song of songlist.value.songs) {
+    for (const id of oldIds) {
+      if (!newIds.has(id)) {
+        delete song.properties[id]
+      }
+    }
+    for (const prop of newProperties) {
+      if (!oldIds.has(prop.id) && !prop.optional) {
+        song.properties[prop.id] = prop.default
+      }
+    }
+  }
+
+  songlist.value.properties = newProperties
+}
 </script>
 
 <template>
@@ -287,6 +313,9 @@ function deleteSelectedSongs() {
         </p>
       </div>
       <div class="flex items-center gap-2">
+        <ElButton size="small" @click="schemaDialogVisible = true">
+          编辑属性
+        </ElButton>
         <!-- TODO 删除按钮未显示 -->
         <template v-if="editMode && selectedSongs.length > 0">
           <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
@@ -333,6 +362,13 @@ function deleteSelectedSongs() {
       :song="editingSong"
       :properties="songlist.properties"
       @save="saveSongProperties"
+    />
+
+    <PropertySchemaEditorDialog
+      v-model:visible="schemaDialogVisible"
+      :properties="songlist.properties"
+      :songs="songlist.songs"
+      @update:properties="handlePropertiesUpdate"
     />
 
     <div class="pagination-wrapper">
