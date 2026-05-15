@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { songSchema } from '@schema/song'
+import type { PropertyKeys, songSchema } from '@schema/song'
 import type { z } from 'astro/zod'
 import type { Component } from 'vue'
 
@@ -17,7 +17,7 @@ defineProps<{
   value: any
 }>()
 
-const componentMap: Record<string, Component> = {
+const componentMap: Record<PropertyKeys, Component> = {
   string: StringProperty,
   integer: NumberProperty,
   float: NumberProperty,

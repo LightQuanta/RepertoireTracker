@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import type { z } from 'astro/zod'
+import PropertyComponent from '@components/songlist/PropertyComponent.vue'
+import PropertyEditorDialog from '@components/songlist/PropertyEditorDialog.vue'
 import { songSchema } from '@schema/song'
-import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
 
+import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import {
-  ElDatePicker,
+  ElButton,
   ElInput,
   ElPagination,
   ElSwitch,
@@ -14,7 +16,6 @@ import {
   ElTableColumn,
   ElTooltip,
 } from 'element-plus'
-import PropertyComponent from './PropertyComponent.vue'
 import 'element-plus/dist/index.css'
 
 type SongList = z.infer<typeof songSchema>
@@ -223,13 +224,52 @@ function goToNextPage(e: KeyboardEvent) {
 onKeyStroke('ArrowLeft', goToPrevPage)
 onKeyStroke('ArrowRight', goToNextPage)
 
-const d = ref('')
+// 属性编辑器弹窗
+const editingSong = ref<SongList['songs'][number] | null>(null)
+const dialogVisible = ref(false)
+
+function openSongEditor(song: SongList['songs'][number]) {
+  editingSong.value = song
+  dialogVisible.value = true
+}
+
+function saveSongProperties(properties: Record<string, any>) {
+  if (editingSong.value) {
+    editingSong.value.properties = properties
+  }
+}
+
+// 编辑模式与多选删除
+const editMode = ref(false)
+const selectedSongs = ref<SongList['songs'][number][]>([])
+const tableRef = useTemplateRef('tableRef')
+
+function handleRowClick(song: SongList['songs'][number], column: any, event: Event) {
+  if (!editMode.value)
+    return
+  if (column.type === 'selection')
+    return
+  const target = event.target as HTMLElement
+  if (target.tagName === 'INPUT' || target.closest('.el-checkbox'))
+    return
+  openSongEditor(song)
+}
+
+function handleSelectionChange(rows: SongList['songs'][number][]) {
+  selectedSongs.value = rows
+}
+
+function deleteSelectedSongs() {
+  if (selectedSongs.value.length === 0)
+    return
+  const ids = new Set(selectedSongs.value.map(s => s.id))
+  songlist.value.songs = songlist.value.songs.filter(s => !ids.has(s.id))
+  selectedSongs.value = []
+  tableRef.value?.clearSelection()
+}
 </script>
 
 <template>
-  <!-- <div>{{ z.date().parse(new Date(10000)) }}</div> -->
-  <ElDatePicker v-model="d" type="datetimerange" />
-  <ElInput v-model="d" />
   <section class="box-border min-h-full w-full border-box bg-#f6f8fb p-5 max-md:p-3">
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>
@@ -247,6 +287,15 @@ const d = ref('')
         </p>
       </div>
       <div class="flex items-center gap-2">
+        <!-- TODO 删除按钮未显示 -->
+        <template v-if="editMode && selectedSongs.length > 0">
+          <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
+            删除选中 ({{ selectedSongs.length }})
+          </ElButton>
+        </template>
+        <ElTooltip :content="editMode ? '点击行编辑属性，勾选行进行删除' : '开启后出现多选框，可编辑或删除歌曲'" placement="top">
+          <ElSwitch v-model="editMode" active-text="编辑模式" inactive-text="浏览模式" inline-prompt />
+        </ElTooltip>
         <ElTooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
           <ElSwitch
             v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
@@ -262,19 +311,29 @@ const d = ref('')
     />
 
     <ElTable
+      ref="tableRef"
       :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
+      :class="{ 'is-editing': editMode }"
+      @row-click="handleRowClick"
     >
+      <ElTableColumn v-if="editMode" type="selection" width="50" align="center" @selection-change="handleSelectionChange" />
       <ElTableColumn
-        v-for="(property, index) in displayProperties" :key="property.id" :label="property.displayName"
-        min-width="190" show-overflow-tooltip :fixed="index === 0"
+        v-for="(property) in displayProperties" :key="property.id" :label="property.displayName"
+        min-width="190" show-overflow-tooltip
       >
-        <!-- TODO 自定义固定列 -->
         <template #default="{ row: song }">
           <PropertyComponent :property="property" :value="song.properties[property.id] ?? property.default" />
         </template>
       </ElTableColumn>
     </ElTable>
+
+    <PropertyEditorDialog
+      v-model:visible="dialogVisible"
+      :song="editingSong"
+      :properties="songlist.properties"
+      @save="saveSongProperties"
+    />
 
     <div class="pagination-wrapper">
       <!-- TODO 怎么改这玩意的文本？ -->
@@ -297,6 +356,10 @@ const d = ref('')
 .song-list-table :deep(.el-table__body-wrapper) {
   overflow-x: auto;
   min-height: 440px;
+}
+
+.song-list-table.is-editing :deep(.el-table__row) {
+  cursor: pointer;
 }
 
 .pagination-wrapper {
