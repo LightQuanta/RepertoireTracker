@@ -7,6 +7,6 @@ const siteConfigSchema = z.object({
     language: z.string().default('zh-cn'),
 })
 
-const loadSiteConfig = createConfigLoader('custom/config/site.json', siteConfigSchema)
+const loadSiteConfig = createConfigLoader('/custom/config/site.json', siteConfigSchema)
 
 export { loadSiteConfig }
