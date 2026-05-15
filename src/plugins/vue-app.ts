@@ -1,6 +1,6 @@
 import type { App } from 'vue'
-import { ID_INJECTION_KEY, ZINDEX_INJECTION_KEY } from 'element-plus'
-import ElementPlus from 'element-plus'
+import ElementPlus, { ID_INJECTION_KEY, ZINDEX_INJECTION_KEY } from 'element-plus'
+
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 
 export default function (app: App) {

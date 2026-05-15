@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { getPropertySchema, type PropertyType } from '@schema/song'
+import type { PropertyType } from '@schema/song'
+import { getPropertySchema } from '@schema/song'
 
 const props = defineProps<{
   value: any
@@ -8,7 +9,8 @@ const props = defineProps<{
 
 const displayText = computed(() => {
   const parsed = getPropertySchema(props.property).parse(props.value)
-  if (parsed == null) return '-'
+  if (parsed == null)
+    return '-'
   return String(parsed)
 })
 </script>

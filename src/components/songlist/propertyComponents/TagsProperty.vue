@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { PropertyType } from '@schema/song'
+import { getPropertySchema } from '@schema/song'
 import { ElTag } from 'element-plus'
-import { getPropertySchema, type PropertyType } from '@schema/song'
+import { computed } from 'vue'
 
 const props = defineProps<{
   value: any
@@ -16,9 +17,9 @@ const displayTags = computed(() => {
 
 <template>
   <div class="flex max-w-full items-center gap-1.5 overflow-hidden">
-    <el-tag v-for="tag in displayTags" size="small" effect="plain" :disable-transitions="true">
+    <ElTag v-for="tag in displayTags" :key="tag" size="small" effect="plain" :disable-transitions="true">
       {{ tag }}
-    </el-tag>
+    </ElTag>
     <span v-if="displayTags.length === 0" class="text-#98a2b3">
       -
     </span>

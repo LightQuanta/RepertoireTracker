@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { z } from 'astro/zod'
-import { songSchema } from '@schema/song'
+import type { songSchema } from '@schema/song'
+import type { z } from 'astro/zod'
 import type { Component } from 'vue'
 
-import StringProperty from './propertyComponents/StringProperty.vue'
-import NumberProperty from './propertyComponents/NumberProperty.vue'
 import BooleanProperty from './propertyComponents/BooleanProperty.vue'
-import TagsProperty from './propertyComponents/TagsProperty.vue'
 import DateProperty from './propertyComponents/DateProperty.vue'
+import NumberProperty from './propertyComponents/NumberProperty.vue'
+import StringProperty from './propertyComponents/StringProperty.vue'
+import TagsProperty from './propertyComponents/TagsProperty.vue'
 
 type SongList = z.infer<typeof songSchema>
 type SongProperty = SongList['properties'][number]
+
+defineProps<{
+  property: SongProperty
+  value: any
+}>()
 
 const componentMap: Record<string, Component> = {
   string: StringProperty,
@@ -20,11 +25,6 @@ const componentMap: Record<string, Component> = {
   tags: TagsProperty,
   date: DateProperty,
 }
-
-defineProps<{
-  property: SongProperty
-  value: any
-}>()
 </script>
 
 <template>

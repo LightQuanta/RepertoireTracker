@@ -1,10 +1,10 @@
+import vue from '@astrojs/vue'
 // @ts-check
 import { defineConfig } from 'astro/config'
 import UnoCSS from 'unocss/astro'
 import AutoImport from 'unplugin-auto-import/astro'
-import { mockDevServerPlugin } from 'vite-plugin-mock-dev-server'
 
-import vue from '@astrojs/vue'
+import { mockDevServerPlugin } from 'vite-plugin-mock-dev-server'
 
 // https://astro.build/config
 export default defineConfig({
@@ -13,7 +13,7 @@ export default defineConfig({
       appEntrypoint: './src/plugins/vue-app.ts',
     }),
     UnoCSS({
-      injectReset: true // or a path to the reset file
+      injectReset: true, // or a path to the reset file
     }),
     AutoImport({
       imports: [
@@ -32,8 +32,8 @@ export default defineConfig({
     server: {
       proxy: {
         // 必须得填个host，不然mock不认
-        '^/dev': 'placeholder'
+        '^/dev': 'placeholder',
       },
     },
-  }
-});
+  },
+})

@@ -1,33 +1,34 @@
 ---
-import background from "../assets/background.svg";
-import Test from "./Test.vue";
+import background from '../assets/background.svg'
+import { createAstroComponentLoader } from './componentLoader.ts'
 
-import { createAstroComponentLoader } from "./componentLoader.ts";
-const loader = createAstroComponentLoader("/src/components/AAA.astro");
+import Test from './Test.vue'
+
+const loader = createAstroComponentLoader('/src/components/AAA.astro')
 const AAA = await loader();
 ---
 
 <div id="container">
-	<img id="background" src={background.src} alt="" fetchpriority="high" />
-	<AAA />
-	<Test client:load />
+  <img id="background" src={background.src} alt="" fetchpriority="high" />
+  <AAA />
+  <Test client:load />
 </div>
 
 <style>
-	#background {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100%;
-		height: 100%;
-		z-index: -1;
-		filter: blur(100px);
-	}
+  #background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    filter: blur(100px);
+  }
 
-	#container {
-		font-family:
-			Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial,
-			sans-serif;
-		height: 100%;
-	}
+  #container {
+    font-family:
+      Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial,
+      sans-serif;
+    height: 100%;
+  }
 </style>

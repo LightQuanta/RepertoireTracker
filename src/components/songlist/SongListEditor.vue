@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import 'element-plus/dist/index.css'
-import { z } from 'astro/zod'
+import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
+import type { z } from 'astro/zod'
+import { songSchema } from '@schema/song'
 import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
 
-import { songSchema } from '@schema/song'
+import { useFuse } from '@vueuse/integrations/useFuse'
 import {
+  ElDatePicker,
   ElInput,
   ElPagination,
   ElSwitch,
@@ -13,7 +15,7 @@ import {
   ElTooltip,
 } from 'element-plus'
 import PropertyComponent from './PropertyComponent.vue'
-import { useFuse, type UseFuseOptions } from '@vueuse/integrations/useFuse'
+import 'element-plus/dist/index.css'
 
 type SongList = z.infer<typeof songSchema>
 
@@ -93,7 +95,7 @@ const fuseOptions = computed(() => ({
     keys: songlist.value.properties
       .filter(property => property.searchWeight > 0)
       .map(property => ({
-        name: 'properties.' + property.id,
+        name: `properties.${property.id}`,
         weight: property.searchWeight,
       })),
     isCaseSensitive: false,
@@ -122,7 +124,7 @@ const containsFilteredSongs = computed(() => {
 
   return songs.value.filter(song =>
     tokens.some(token =>
-      searchablePropertyIds.some(id => {
+      searchablePropertyIds.some((id) => {
         const value = song.properties[id]
         return value != null && String(value).toLowerCase().includes(token)
       }),
@@ -130,29 +132,27 @@ const containsFilteredSongs = computed(() => {
   )
 })
 
-const filteredSongs = computed(() => {
+const filteredSongs = ref(songs.value)
+
+watch([debouncedSearchText, searchMethod, songs], () => {
   const text = debouncedSearchText.value.trim()
 
   if (!text) {
+    filteredSongs.value = songs.value
     searchDuration.value = 0
     searchPerformed.value = false
-    return songs.value
+    return
   }
 
   searchPerformed.value = true
-
-  if (searchMethod.value === 'contains') {
-    const start = performance.now()
-    const result = containsFilteredSongs.value
-    searchDuration.value = performance.now() - start
-    return result
-  }
-
   const start = performance.now()
-  const results = fuse.results.value.map(r => r.item)
+
+  filteredSongs.value = searchMethod.value === 'contains'
+    ? containsFilteredSongs.value
+    : fuse.results.value.map(r => r.item)
+
   searchDuration.value = performance.now() - start
-  return results
-})
+}, { immediate: true })
 
 const currentPage = ref(1)
 const pageSize = ref(20)
@@ -168,7 +168,8 @@ if (q) {
 watch(debouncedSearchText, (val) => {
   if (val.length === 0) {
     delete params.q
-  } else {
+  }
+  else {
     params.q = val
   }
 })
@@ -176,13 +177,15 @@ watch(debouncedSearchText, (val) => {
 const p = params.page
 if (p) {
   const n = Number(typeof p === 'string' ? p : p[0])
-  if (Number.isFinite(n)) currentPage.value = n
+  if (Number.isFinite(n))
+    currentPage.value = n
 }
 
 watch(currentPage, (val) => {
   if (val === 1) {
     delete params.page
-  } else {
+  }
+  else {
     params.page = String(val)
   }
 })
@@ -200,7 +203,8 @@ const paginatedSongs = computed(() => {
 const totalPages = computed(() => Math.ceil(filteredSongs.value.length / pageSize.value))
 
 function goToPrevPage(e: KeyboardEvent) {
-  if (isFocusedElementEditable()) return
+  if (isFocusedElementEditable())
+    return
   if (currentPage.value > 1) {
     currentPage.value--
     e.preventDefault()
@@ -208,7 +212,8 @@ function goToPrevPage(e: KeyboardEvent) {
 }
 
 function goToNextPage(e: KeyboardEvent) {
-  if (isFocusedElementEditable()) return
+  if (isFocusedElementEditable())
+    return
   if (currentPage.value < totalPages.value) {
     currentPage.value++
     e.preventDefault()
@@ -217,9 +222,14 @@ function goToNextPage(e: KeyboardEvent) {
 
 onKeyStroke('ArrowLeft', goToPrevPage)
 onKeyStroke('ArrowRight', goToNextPage)
+
+const d = ref('')
 </script>
 
 <template>
+  <!-- <div>{{ z.date().parse(new Date(10000)) }}</div> -->
+  <ElDatePicker v-model="d" type="datetimerange" />
+  <ElInput v-model="d" />
   <section class="box-border min-h-full w-full border-box bg-#f6f8fb p-5 max-md:p-3">
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>
@@ -227,38 +237,51 @@ onKeyStroke('ArrowRight', goToNextPage)
           歌单编辑
         </h1>
         <p class="mt-1.5 text-13px text-#667085">
-          <template v-if="searchPerformed">已展示 {{ filteredSongs.length }} / {{ songs.length }} 首歌曲 · 搜索用时 {{
-            searchDuration < 1 ? '<1' : Math.round(searchDuration) }}ms</template>
-              <template v-else>共 {{ songs.length }} 首歌曲</template>
+          <template v-if="searchPerformed">
+            已展示 {{ filteredSongs.length }} / {{ songs.length }} 首歌曲 · 搜索用时 {{
+              searchDuration < 1 ? '<1' : Math.round(searchDuration) }}ms
+          </template>
+          <template v-else>
+            共 {{ songs.length }} 首歌曲
+          </template>
         </p>
       </div>
       <div class="flex items-center gap-2">
-        <el-tooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
-          <el-switch v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
-            inactive-text="分词匹配" inline-prompt class="search-method-switch" />
-        </el-tooltip>
+        <ElTooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
+          <ElSwitch
+            v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
+            inactive-text="分词匹配" inline-prompt class="search-method-switch"
+          />
+        </ElTooltip>
       </div>
     </header>
 
-    <el-input v-model="inputText" ref="searchInput" autofocus placeholder="搜索歌曲" class="mb-4" maxlength="50" clearable
-      show-word-limit />
+    <ElInput
+      ref="searchInput" v-model="inputText" autofocus placeholder="搜索歌曲" class="mb-4" maxlength="50" clearable
+      show-word-limit
+    />
 
-    <el-table :data="paginatedSongs" border row-key="id" stripe
-      class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]">
-      <el-table-column v-for="(property, index) in displayProperties" :key="property.id" :label="property.displayName"
-        min-width="190" show-overflow-tooltip :fixed="index === 0">
+    <ElTable
+      :data="paginatedSongs" border row-key="id" stripe
+      class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
+    >
+      <ElTableColumn
+        v-for="(property, index) in displayProperties" :key="property.id" :label="property.displayName"
+        min-width="190" show-overflow-tooltip :fixed="index === 0"
+      >
         <!-- TODO 自定义固定列 -->
         <template #default="{ row: song }">
           <PropertyComponent :property="property" :value="song.properties[property.id] ?? property.default" />
         </template>
-      </el-table-column>
-    </el-table>
+      </ElTableColumn>
+    </ElTable>
 
     <div class="pagination-wrapper">
       <!-- TODO 怎么改这玩意的文本？ -->
-      <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
-        :total="filteredSongs.length" layout="sizes, prev, pager, next, jumper" background>
-      </el-pagination>
+      <ElPagination
+        v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+        :total="filteredSongs.length" layout="sizes, prev, pager, next, jumper" background
+      />
     </div>
   </section>
 </template>
