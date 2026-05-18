@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PropertyType } from '@schema/song'
 import { getPropertySchema } from '@schema/song'
-import { ElTag } from 'element-plus'
+import { ElTag, ElText } from 'element-plus'
 import { computed } from 'vue'
 
 const props = defineProps<{
@@ -20,8 +20,8 @@ const displayTags = computed(() => {
     <ElTag v-for="tag in displayTags" :key="tag" size="small" effect="plain" :disable-transitions="true">
       {{ tag }}
     </ElTag>
-    <span v-if="displayTags.length === 0" class="text-#98a2b3">
+    <ElText v-if="displayTags.length === 0">
       -
-    </span>
+    </ElText>
   </div>
 </template>

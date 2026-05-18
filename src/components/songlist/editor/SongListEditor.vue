@@ -296,13 +296,13 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
 </script>
 
 <template>
-  <section class="box-border min-h-full w-full border-box bg-#f6f8fb p-5 max-md:p-3">
+  <section class="box-border min-h-full w-full border-box p-5 max-md:p-3">
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>
-        <h1 class="mb-4 text-22px text-#1f2937 font-650 leading-1.25 mb-4">
+        <ElText class="mb-4 text-22px font-650 leading-1.25 mb-4">
           歌单编辑
-        </h1>
-        <p class="mt-1.5 text-13px text-#667085">
+        </ElText>
+        <ElText class="mt-1.5 text-13px" type="info">
           <template v-if="searchPerformed">
             已展示 {{ filteredSongs.length }} / {{ songs.length }} 首歌曲 · 搜索用时 {{
               searchDuration < 1 ? '<1' : Math.round(searchDuration) }}ms
@@ -310,7 +310,7 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
           <template v-else>
             共 {{ songs.length }} 首歌曲
           </template>
-        </p>
+        </ElText>
       </div>
       <div class="flex items-center gap-2">
         <ElButton size="small" @click="schemaDialogVisible = true">
@@ -384,8 +384,6 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
 <style scoped>
 .song-list-table :deep(.el-table__header th) {
   height: 44px;
-  background: #f9fafb;
-  color: #344054;
   font-weight: 650;
 }
 
@@ -406,8 +404,8 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
   justify-content: center;
   padding: 12px 16px;
   margin-top: -1px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
+  background: var(--el-fill-color-blank);
+  /* border: 1px solid #e4e7ed; */
   border-radius: 0 0 8px 8px;
   box-shadow: 0 -4px 12px rgb(0 0 0 / 4%);
 }

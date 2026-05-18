@@ -1,12 +1,13 @@
 ---
 import { ClientRouter } from 'astro:transitions'
+import ThemeToggle from '../components/ThemeToggle.vue'
 import { loadSiteConfig } from '../config/site'
 
 const config = await loadSiteConfig();
 ---
 
 <!doctype html>
-<html lang={config.language} class="m-0 w-full h-full">
+<html lang={config.language} class="m-0 w-full h-full bg-[var(--el-fill-color-blank)]">
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width" />
@@ -17,6 +18,9 @@ const config = await loadSiteConfig();
         <ClientRouter />
     </head>
     <body class="m-0 w-full h-full">
+        <div class="fixed right-4 top-4 z-50">
+            <ThemeToggle client:load />
+        </div>
         <slot />
     </body>
 </html>

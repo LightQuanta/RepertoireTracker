@@ -2,6 +2,7 @@ import type { App } from 'vue'
 import ElementPlus, { ID_INJECTION_KEY, ZINDEX_INJECTION_KEY } from 'element-plus'
 
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import 'element-plus/theme-chalk/dark/css-vars.css'
 
 export default function (app: App) {
   app.use(ElementPlus, {

@@ -17,7 +17,7 @@ const displayText = computed(() => {
 </script>
 
 <template>
-  <span class="max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-#1f2937">
+  <ElText class="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
     {{ displayText }}
-  </span>
+  </ElText>
 </template>
