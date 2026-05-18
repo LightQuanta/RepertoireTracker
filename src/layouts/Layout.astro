@@ -1,5 +1,5 @@
 ---
-import { ClientRouter } from 'astro:transitions'
+// import { ClientRouter } from 'astro:transitions'
 import ThemeToggle from '../components/ThemeToggle.vue'
 import { loadSiteConfig } from '../config/site'
 
@@ -7,7 +7,10 @@ const config = await loadSiteConfig();
 ---
 
 <!doctype html>
-<html lang={config.language} class="m-0 w-full h-full bg-[var(--el-fill-color-blank)]">
+<html
+  lang={config.language}
+  class="m-0 w-full h-full bg-[var(--el-fill-color-blank)]"
+>
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width" />
@@ -15,7 +18,42 @@ const config = await loadSiteConfig();
         <link rel="icon" href="/favicon.ico" />
         <meta name="generator" content={Astro.generator} />
         <title>{config.title}</title>
-        <ClientRouter />
+
+        <!-- TODO 暗色模式切换动画会和这个打架 -->
+        <!-- <ClientRouter /> -->
+
+        <style is:global>
+            ::view-transition-old(root),
+            ::view-transition-new(root) {
+                animation-duration: .7s;
+                /* animation-timing-function: cubic-bezier(.25,.59,.47,-0.84); */
+                pointer-events: none;
+                mix-blend-mode: normal;
+            }
+
+            ::view-transition-old(root) {
+                animation-name: theme-fade-out;
+            }
+
+            ::view-transition-new(root) {
+                animation-name: theme-expand-in;
+            }
+
+            @keyframes theme-fade-out {
+                to {
+                    opacity: 0;
+                }
+            }
+
+            @keyframes theme-expand-in {
+                from {
+                    clip-path: circle(0px at var(--x) var(--y));
+                }
+                to {
+                    clip-path: circle(var(--radius-end) at var(--x) var(--y));
+                }
+            }
+        </style>
     </head>
     <body class="m-0 w-full h-full">
         <div class="fixed right-4 top-4 z-50">

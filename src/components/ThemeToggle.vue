@@ -2,7 +2,12 @@
 import { ElButton, ElTooltip } from 'element-plus'
 import { useAppDark } from '@/composables/useAppDark'
 
-const { isDark, toggleDark } = useAppDark()
+const { isDark, toggleDarkWithTransition } = useAppDark()
+
+function handleToggle(event: MouseEvent) {
+  const { clientX, clientY } = event
+  toggleDarkWithTransition(clientX, clientY)
+}
 </script>
 
 <template>
@@ -10,7 +15,7 @@ const { isDark, toggleDark } = useAppDark()
     <ElButton
       size="small"
       circle
-      @click="toggleDark()"
+      @click="handleToggle"
     >
       <span class="text-16px leading-none">{{ isDark ? '🌙' : '☀️' }}</span>
     </ElButton>
