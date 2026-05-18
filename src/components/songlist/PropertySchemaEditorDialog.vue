@@ -17,6 +17,7 @@ import {
   ElTableColumn,
   ElTag,
 } from 'element-plus'
+import PropertyEditorComponent from './PropertyEditorComponent.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -265,9 +266,12 @@ async function deleteProperty(property: PropertyType) {
         <ElInputNumber v-model="propertyForm.searchWeight" :min="0" :max="999" class="w-full" />
       </ElFormItem>
       <ElFormItem label="默认值">
-        <ElInput
-          v-model="propertyForm.default" placeholder="根据类型填写，如文本/数字/JSON 数组等"
-          :disabled="propertyForm.optional"
+        <div v-if="propertyForm.optional" class="text-13px text-#98a2b3">
+          可选属性无需默认值
+        </div>
+        <PropertyEditorComponent
+          v-else :property="propertyForm" :model-value="propertyForm.default"
+          @update:model-value="propertyForm.default = $event"
         />
       </ElFormItem>
     </ElForm>

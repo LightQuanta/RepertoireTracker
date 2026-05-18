@@ -1,13 +1,7 @@
 <script setup lang="ts">
-import type { PropertyKeys, PropertyType } from '@schema/song'
-import type { Component } from 'vue'
+import type { PropertyType } from '@schema/song'
 import { ElButton, ElDialog, ElText } from 'element-plus'
-
-import BooleanPropertyEditor from './propertyEditors/BooleanPropertyEditor.vue'
-import DatePropertyEditor from './propertyEditors/DatePropertyEditor.vue'
-import NumberPropertyEditor from './propertyEditors/NumberPropertyEditor.vue'
-import StringPropertyEditor from './propertyEditors/StringPropertyEditor.vue'
-import TagsPropertyEditor from './propertyEditors/TagsPropertyEditor.vue'
+import PropertyEditorComponent from './PropertyEditorComponent.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -19,15 +13,6 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   'save': [songData: Record<string, any>]
 }>()
-
-const editorMap: Record<PropertyKeys, Component> = {
-  string: StringPropertyEditor,
-  integer: NumberPropertyEditor,
-  float: NumberPropertyEditor,
-  boolean: BooleanPropertyEditor,
-  tags: TagsPropertyEditor,
-  date: DatePropertyEditor,
-}
 
 const editingProperties = ref<Record<string, any>>({})
 
@@ -61,8 +46,8 @@ function handleSave() {
           {{ property.displayName }}
         </ElText>
         <div class="flex-1">
-          <component
-            :is="editorMap[property.type]" :property="property"
+          <PropertyEditorComponent
+            :property="property"
             :model-value="editingProperties[property.id] ?? property.default"
             @update:model-value="editingProperties[property.id] = $event"
           />
