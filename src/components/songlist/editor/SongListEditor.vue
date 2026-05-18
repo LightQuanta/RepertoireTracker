@@ -10,8 +10,11 @@ import { songSchema } from '@schema/song'
 import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import {
+  ElBreadcrumb,
+  ElBreadcrumbItem,
   ElButton,
   ElInput,
+  ElLink,
   ElPagination,
   ElSwitch,
   ElTable,
@@ -296,7 +299,15 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
 </script>
 
 <template>
-  <section class="box-border min-h-full w-full border-box p-5 max-md:p-3">
+  <section class="flex flex-col h-full box-border min-h-full w-full border-box p-5 max-md:p-3">
+    <ElBreadcrumb separator="/" class="mb-2">
+      <ElBreadcrumbItem>
+        <ElLink href="/">
+          首页
+        </ElLink>
+      </ElBreadcrumbItem>
+      <ElBreadcrumbItem>编辑器</ElBreadcrumbItem>
+    </ElBreadcrumb>
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>
         <ElText class="mb-4 text-22px font-650 leading-1.25 mb-4">
@@ -342,7 +353,7 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
     <ElTable
       ref="tableRef"
       :data="paginatedSongs" border row-key="id" stripe
-      class="song-list-table w-full overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
+      class="song-list-table w-full flex-1 overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
       :class="{ 'is-editing': editMode }"
       @row-click="handleRowClick"
     >
