@@ -4,7 +4,7 @@ export function useAppDark() {
   const isDark = useDark()
   const toggleDark = useToggle(isDark)
 
-  function toggleDarkWithTransition(x: number, y: number) {
+  function toggleDarkWithTransition() {
     if (!document.startViewTransition) {
       toggleDark()
       return
@@ -15,11 +15,7 @@ export function useAppDark() {
       document.documentElement.clientHeight,
     )
 
-    const root = document.documentElement
-    root.style.setProperty('--x', `${x}px`)
-    root.style.setProperty('--y', `${y}px`)
-    root.style.setProperty('--radius-end', `${diagonal}px`)
-
+    document.documentElement.style.setProperty('--radius-end', `${diagonal}px`)
     document.startViewTransition(toggleDark)
   }
 

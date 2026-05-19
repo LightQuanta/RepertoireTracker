@@ -23,34 +23,21 @@ const config = await loadSiteConfig();
         <!-- <ClientRouter /> -->
 
         <style is:global>
-            ::view-transition-old(root),
             ::view-transition-new(root) {
                 animation-duration: .7s;
-                /* animation-timing-function: cubic-bezier(.25,.59,.47,-0.84); */
-                pointer-events: none;
-                mix-blend-mode: normal;
-            }
-
-            ::view-transition-old(root) {
-                animation-name: theme-fade-out;
-            }
-
-            ::view-transition-new(root) {
                 animation-name: theme-expand-in;
             }
 
-            @keyframes theme-fade-out {
-                to {
-                    opacity: 0;
-                }
+            ::view-transition-old(root) {
+                animation-name: none;
             }
 
             @keyframes theme-expand-in {
                 from {
-                    clip-path: circle(0px at var(--x) var(--y));
+                    clip-path: circle(0 at 100% 0);
                 }
                 to {
-                    clip-path: circle(var(--radius-end) at var(--x) var(--y));
+                    clip-path: circle(var(--radius-end) at 100% 0);
                 }
             }
         </style>
