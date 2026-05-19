@@ -4,7 +4,7 @@ export function useAppDark() {
   const isDark = useDark()
   const toggleDark = useToggle(isDark)
 
-  function toggleDarkWithTransition() {
+  async function toggleDarkWithTransition() {
     if (!document.startViewTransition) {
       toggleDark()
       return
@@ -15,8 +15,28 @@ export function useAppDark() {
       document.documentElement.clientHeight,
     )
 
-    document.documentElement.style.setProperty('--radius-end', `${diagonal}px`)
-    document.startViewTransition(toggleDark)
+    // 临时禁用默认动画
+    const disableDefaultTransitionStyle = document.createElement('style')
+    disableDefaultTransitionStyle.textContent = `
+      ::view-transition-old(root), ::view-transition-new(root) {
+        animation: none !important;
+      }`
+    document.head.appendChild(disableDefaultTransitionStyle)
+
+    const transition = document.startViewTransition(toggleDark)
+    await transition.ready
+
+    document.documentElement.animate([
+      { clipPath: 'circle(0 at 100% 0)' },
+      { clipPath: `circle(${diagonal}px at 100% 0)` },
+    ], {
+      duration: 500,
+      easing: 'ease-out',
+      pseudoElement: '::view-transition-new(root)',
+    })
+
+    await transition.finished
+    disableDefaultTransitionStyle.remove()
   }
 
   return {
