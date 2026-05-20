@@ -1,5 +1,6 @@
 ---
 import Welcome from '../components/Welcome.astro'
+import { configFiles } from '../config/configLoader'
 import Layout from '../layouts/Layout.astro';
 
 // Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
@@ -7,6 +8,10 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout>
+    <div class="fixed bottom-0 left-0">
+        { Object.keys(configFiles).map(key => <div>{key}</div>) }
+    </div>
+    <br />
     <a href="/b">bbbbb</a>
     <a href="/editor">editor</a>
     <Welcome />

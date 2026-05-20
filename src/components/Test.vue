@@ -2,14 +2,23 @@
 const count = ref(0)
 
 async function f() {
-  fetch('/dev/users', {
-    method: 'POST',
-    body: 'dljsakjldsalkjdkjlaslkjdajlk',
-  })
-    .then(d => d.text())
-    .then(d => console.log(d))
+  // fetch('/data/songlist.json').then(d => d.json()).then(d => console.log(d))
 
-  fetch('/data/songlist.json').then(d => d.json()).then(d => console.log(d))
+  const currentSiteConfig = await fetch('/dev/config/get', {
+    method: 'POST',
+    body: JSON.stringify({ path: 'site.json' }),
+  }).then(d => d.json()).then(d => d.data)
+
+  fetch('/dev/config/save', {
+    method: 'POST',
+    body: JSON.stringify({
+      path: 'site.json',
+      config: {
+        ...currentSiteConfig,
+        title: `Repertoire Tracker${Math.random()}`,
+      },
+    }),
+  }).then(d => d.json())
 
   count.value++
 }

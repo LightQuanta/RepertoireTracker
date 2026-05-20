@@ -4,7 +4,7 @@ import { songSchema } from '@/schema/song'
 
 // TODO 实现歌曲列表获取
 
-const loadExampleSongData = createConfigLoader('/src/config/songdata_example.json', songSchema)
+const loadExampleSongData = createConfigLoader('songdata.json', songSchema)
 
 export const GET: APIRoute = async () => {
   // console.log('song data', songData)
