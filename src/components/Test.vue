@@ -1,24 +1,17 @@
 <script setup lang="ts">
+import { reloadConfig } from '@/config/configLoader'
+import { siteConfigLoader } from '@/config/site'
+
 const count = ref(0)
 
 async function f() {
   // fetch('/data/songlist.json').then(d => d.json()).then(d => console.log(d))
+  const currentSiteConfig = await siteConfigLoader.load()
 
-  const currentSiteConfig = await fetch('/dev/config/get', {
-    method: 'POST',
-    body: JSON.stringify({ path: 'site.json' }),
-  }).then(d => d.json()).then(d => d.data)
-
-  fetch('/dev/config/save', {
-    method: 'POST',
-    body: JSON.stringify({
-      path: 'site.json',
-      config: {
-        ...currentSiteConfig,
-        title: `Repertoire Tracker${Math.random()}`,
-      },
-    }),
-  }).then(d => d.json())
+  await reloadConfig(siteConfigLoader, {
+    ...currentSiteConfig,
+    title: `Repertoire Tracker${Math.random()}`,
+  })
 
   count.value++
 }

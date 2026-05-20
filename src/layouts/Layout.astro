@@ -1,9 +1,10 @@
 ---
 import { ClientRouter } from 'astro:transitions'
 import ThemeToggle from '../components/ThemeToggle.vue'
-import { loadSiteConfig } from '../config/site'
+import { siteConfigLoader } from '../config/site'
 
-const config = await loadSiteConfig();
+// TODO 解决HMR失效问题
+const config = await siteConfigLoader.load();
 ---
 
 <!doctype html>
