@@ -5,13 +5,14 @@
     "paths": {
       "@/*": ["./src/*"],
       "@components/*": ["./src/components/*"],
-      "@schema/*": ["./src/schema/*"]
+      "@schema/*": ["./src/schema/*"],
+      "@config/*": ["./src/config/*"],
     }
   },
   "include": [
     ".astro/types.d.ts",
     "auto-imports.d.ts",
-    "**/*"
+    "**/*",
   ],
   "exclude": [
     "dist"

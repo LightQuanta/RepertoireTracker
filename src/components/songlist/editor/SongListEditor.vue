@@ -25,12 +25,12 @@ import 'element-plus/dist/index.css'
 
 type SongList = z.infer<typeof songSchema>
 
-const sourceUrl = import.meta.env.SSR
-  ? 'http://localhost:4321/data/songlist.json'
-  : '/data/songlist.json'
-
 // TODO 性能优化？
-const songlist = ref(songSchema.parse(await fetch(sourceUrl).then(res => res.json())))
+const songlist = ref(
+  import.meta.env.SSR
+    ? await import('@config/song').then(d => d.songConfigLoader.load())
+    : songSchema.parse(await fetch('/data/songlist.json').then(res => res.json())),
+)
 const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
 
 // 搜索处理
@@ -351,13 +351,14 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
     />
 
     <ElTable
-      ref="tableRef"
-      :data="paginatedSongs" border row-key="id" stripe
+      ref="tableRef" :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full flex-1 overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
-      :class="{ 'is-editing': editMode }"
-      @row-click="handleRowClick"
+      :class="{ 'is-editing': editMode }" @row-click="handleRowClick"
     >
-      <ElTableColumn v-if="editMode" type="selection" width="50" align="center" @selection-change="handleSelectionChange" />
+      <ElTableColumn
+        v-if="editMode" type="selection" width="50" align="center"
+        @selection-change="handleSelectionChange"
+      />
       <ElTableColumn
         v-for="(property) in displayProperties" :key="property.id" :label="property.displayName"
         min-width="190" show-overflow-tooltip
@@ -369,17 +370,13 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
     </ElTable>
 
     <PropertyEditorDialog
-      v-model:visible="dialogVisible"
-      :song="editingSong"
-      :properties="songlist.properties"
+      v-model:visible="dialogVisible" :song="editingSong" :properties="songlist.properties"
       @save="saveSongProperties"
     />
 
     <PropertySchemaEditorDialog
-      v-model:visible="schemaDialogVisible"
-      :properties="songlist.properties"
-      :songs="songlist.songs"
-      @update:properties="handlePropertiesUpdate"
+      v-model:visible="schemaDialogVisible" :properties="songlist.properties"
+      :songs="songlist.songs" @update:properties="handlePropertiesUpdate"
     />
 
     <div class="pagination-wrapper">
