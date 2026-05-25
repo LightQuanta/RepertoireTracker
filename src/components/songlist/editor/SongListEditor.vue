@@ -14,6 +14,8 @@ import {
   ElButton,
   ElInput,
   ElLink,
+  ElMessage,
+  ElMessageBox,
   ElPagination,
   ElSwitch,
   ElTable,
@@ -22,6 +24,7 @@ import {
   ElTooltip,
 } from 'element-plus'
 import { songConfigLoader } from '@/config/config'
+import { reloadConfig, resetConfig } from '@/config/configLoader'
 
 import 'element-plus/dist/index.css'
 
@@ -243,33 +246,122 @@ function saveSongProperties(properties: Record<string, any>) {
   }
 }
 
-// 编辑模式与多选删除
-const editMode = ref(false)
+function buildDefaultProperties() {
+  const props: Record<string, any> = {}
+  for (const property of songlist.value.properties) {
+    if (property.default !== undefined) {
+      props[property.id] = JSON.parse(JSON.stringify(property.default))
+    }
+  }
+  return props
+}
+
+function addSong() {
+  const newSong: SongList['songs'][number] = {
+    id: crypto.randomUUID(),
+    properties: buildDefaultProperties(),
+  }
+  songlist.value.songs.push(newSong)
+  openSongEditor(newSong)
+}
+
+// 多选与删除
 const selectedSongs = ref<SongList['songs'][number][]>([])
 const tableRef = useTemplateRef('tableRef')
-
-function handleRowClick(song: SongList['songs'][number], column: any, event: Event) {
-  if (!editMode.value)
-    return
-  if (column.type === 'selection')
-    return
-  const target = event.target as HTMLElement
-  if (target.tagName === 'INPUT' || target.closest('.el-checkbox'))
-    return
-  openSongEditor(song)
-}
 
 function handleSelectionChange(rows: SongList['songs'][number][]) {
   selectedSongs.value = rows
 }
 
-function deleteSelectedSongs() {
+async function deleteSelectedSongs() {
   if (selectedSongs.value.length === 0)
     return
-  const ids = new Set(selectedSongs.value.map(s => s.id))
-  songlist.value.songs = songlist.value.songs.filter(s => !ids.has(s.id))
-  selectedSongs.value = []
-  tableRef.value?.clearSelection()
+  try {
+    await ElMessageBox.confirm(
+      `确定删除选中的 ${selectedSongs.value.length} 首歌曲吗？此操作不可撤销。`,
+      '确认删除',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+    )
+    const ids = new Set(selectedSongs.value.map(s => s.id))
+    songlist.value.songs = songlist.value.songs.filter(s => !ids.has(s.id))
+    selectedSongs.value = []
+    tableRef.value?.clearSelection()
+    ElMessage.success(`已删除 ${ids.size} 首歌曲`)
+  }
+  catch {
+    // 用户取消
+  }
+}
+
+async function deleteSong(song: SongList['songs'][number]) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除「${song.properties.title ?? '未命名'}」吗？此操作不可撤销。`,
+      '确认删除',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+    )
+    songlist.value.songs = songlist.value.songs.filter(s => s.id !== song.id)
+    ElMessage.success('已删除')
+  }
+  catch {
+    // 用户取消
+  }
+}
+
+async function clearAllSongs() {
+  if (songlist.value.songs.length === 0) {
+    ElMessage.info('歌单已经是空的')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(
+      `确定清空全部 ${songlist.value.songs.length} 首歌曲吗？此操作不可撤销。`,
+      '确认清空',
+      { confirmButtonText: '清空', cancelButtonText: '取消', type: 'warning' },
+    )
+    songlist.value.songs = []
+    selectedSongs.value = []
+    tableRef.value?.clearSelection()
+    ElMessage.success('已清空全部歌曲')
+  }
+  catch {
+    // 用户取消
+  }
+}
+
+const resetting = ref(false)
+
+async function handleReset() {
+  try {
+    await ElMessageBox.confirm(
+      '确定重置配置文件吗？自定义的歌曲数据和属性将丢失，回退到默认配置。',
+      '确认重置',
+      { confirmButtonText: '重置', cancelButtonText: '取消', type: 'warning' },
+    )
+  }
+  catch {
+    return
+  }
+
+  resetting.value = true
+  try {
+    const defaultConfig = await resetConfig(songConfigLoader)
+    if (defaultConfig) {
+      songlist.value = defaultConfig as SongList
+      selectedSongs.value = []
+      tableRef.value?.clearSelection()
+      ElMessage.success('已重置为默认配置')
+    }
+    else {
+      ElMessage.error('重置失败，请查看控制台日志')
+    }
+  }
+  catch {
+    ElMessage.error('重置失败，请检查开发服务器是否正常运行')
+  }
+  finally {
+    resetting.value = false
+  }
 }
 
 // 属性定义管理
@@ -293,6 +385,27 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
   }
 
   songlist.value.properties = newProperties
+}
+
+const saving = ref(false)
+
+async function handleSave() {
+  saving.value = true
+  try {
+    const success = await reloadConfig(songConfigLoader, songlist.value)
+    if (success) {
+      ElMessage.success('保存成功')
+    }
+    else {
+      ElMessage.error('保存失败，请查看控制台日志')
+    }
+  }
+  catch {
+    ElMessage.error('保存失败，请检查开发服务器是否正常运行')
+  }
+  finally {
+    saving.value = false
+  }
 }
 </script>
 
@@ -325,15 +438,23 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
         <ElButton size="small" @click="schemaDialogVisible = true">
           编辑属性
         </ElButton>
-        <!-- TODO 删除按钮未显示 -->
-        <template v-if="editMode && selectedSongs.length > 0">
+        <ElButton type="success" size="small" @click="addSong">
+          添加歌曲
+        </ElButton>
+        <ElButton type="primary" size="small" :loading="saving" @click="handleSave">
+          保存
+        </ElButton>
+        <ElButton size="small" plain @click="clearAllSongs">
+          清空歌曲
+        </ElButton>
+        <ElButton size="small" :loading="resetting" @click="handleReset">
+          重置配置
+        </ElButton>
+        <template v-if="selectedSongs.length > 0">
           <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
             删除选中 ({{ selectedSongs.length }})
           </ElButton>
         </template>
-        <ElTooltip :content="editMode ? '点击行编辑属性，勾选行进行删除' : '开启后出现多选框，可编辑或删除歌曲'" placement="top">
-          <ElSwitch v-model="editMode" active-text="编辑模式" inactive-text="浏览模式" inline-prompt />
-        </ElTooltip>
         <ElTooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
           <ElSwitch
             v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
@@ -351,18 +472,27 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
     <ElTable
       ref="tableRef" :data="paginatedSongs" border row-key="id" stripe
       class="song-list-table w-full flex-1 overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
-      :class="{ 'is-editing': editMode }" @row-click="handleRowClick"
+      @selection-change="handleSelectionChange"
     >
-      <ElTableColumn
-        v-if="editMode" type="selection" width="50" align="center"
-        @selection-change="handleSelectionChange"
-      />
+      <ElTableColumn type="selection" width="50" align="center" />
       <ElTableColumn
         v-for="(property) in displayProperties" :key="property.id" :label="property.displayName"
         min-width="190" show-overflow-tooltip
       >
         <template #default="{ row: song }">
           <PropertyComponent :property="property" :value="song.properties[property.id] ?? property.default" />
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="操作" width="130" fixed="right" align="center">
+        <template #default="{ row: song }">
+          <div class="flex items-center justify-center gap-1">
+            <ElButton size="small" type="primary" link @click="openSongEditor(song)">
+              编辑
+            </ElButton>
+            <ElButton size="small" type="danger" link @click="deleteSong(song)">
+              删除
+            </ElButton>
+          </div>
         </template>
       </ElTableColumn>
     </ElTable>
@@ -396,10 +526,6 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
 .song-list-table :deep(.el-table__body-wrapper) {
   overflow-x: auto;
   min-height: 440px;
-}
-
-.song-list-table.is-editing :deep(.el-table__row) {
-  cursor: pointer;
 }
 
 .pagination-wrapper {

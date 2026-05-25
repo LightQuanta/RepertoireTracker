@@ -73,4 +73,43 @@ async function reloadConfig<T extends z.ZodObject<any>>(configLoader: ConfigLoad
   }
 }
 
-export { allConfigLoaders, configFiles, createConfigLoader, reloadConfig }
+/**
+ * 重置配置文件（删除 custom 下的自定义配置，回退到默认配置，仅在开发环境有效）
+ * @param configLoader 配置文件加载器
+ * @returns 重置后的默认配置，失败返回 null
+ */
+async function resetConfig<T extends z.ZodObject<any>>(configLoader: ConfigLoader<T>): Promise<z.output<T> | null> {
+  if (import.meta.env.DEV) {
+    const resp = await fetch('/dev/config/reset', {
+      method: 'POST',
+      body: JSON.stringify({ path: configLoader.path }),
+    }).then(d => d.json())
+
+    if (resp.code !== 0) {
+      console.error('配置重置失败', resp)
+      return null
+    }
+
+    const getResp = await fetch('/dev/config/get', {
+      method: 'POST',
+      body: JSON.stringify({ path: configLoader.path }),
+    }).then(d => d.json())
+
+    if (getResp.code !== 0) {
+      return null
+    }
+
+    const result = configLoader.schema.safeParse(getResp.data)
+    if (!result.success) {
+      console.warn('默认配置解析失败', result.error)
+      return configLoader.schema.parse({})
+    }
+    return result.data
+  }
+  else {
+    console.warn('非开发环境，无法重置配置文件')
+    return null
+  }
+}
+
+export { allConfigLoaders, configFiles, createConfigLoader, reloadConfig, resetConfig }
