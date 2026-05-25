@@ -16,9 +16,7 @@ export default defineConfig({
       injectReset: true, // or a path to the reset file
     }),
     AutoImport({
-      imports: [
-        'vue',
-      ],
+      imports: ['vue'],
       dts: true,
     }),
   ],

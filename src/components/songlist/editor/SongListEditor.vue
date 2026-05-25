@@ -19,6 +19,7 @@ import {
   ElSwitch,
   ElTable,
   ElTableColumn,
+  ElText,
   ElTooltip,
 } from 'element-plus'
 import 'element-plus/dist/index.css'
@@ -306,7 +307,7 @@ function handlePropertiesUpdate(newProperties: PropertyType[]) {
           首页
         </ElLink>
       </ElBreadcrumbItem>
-      <ElBreadcrumbItem>编辑器</ElBreadcrumbItem>
+      <ElBreadcrumbItem><ElLink>编辑器</ElLink></ElBreadcrumbItem>
     </ElBreadcrumb>
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>
