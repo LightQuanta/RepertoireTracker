@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PropertyType } from '@schema/song'
+import type { PropertyType } from '@/config/song'
 import { ElInputTag } from 'element-plus'
 
 const props = defineProps<{

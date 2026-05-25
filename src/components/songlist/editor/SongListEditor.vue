@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import type { PropertyType } from '@schema/song'
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
 import type { z } from 'astro/zod'
+import type { PropertyType, songSchema } from '@/config/song'
 import PropertyComponent from '@components/songlist/PropertyComponent.vue'
 import PropertyEditorDialog from '@components/songlist/PropertyEditorDialog.vue'
 import PropertySchemaEditorDialog from '@components/songlist/PropertySchemaEditorDialog.vue'
-import { songSchema } from '@schema/song'
 
 import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
@@ -22,16 +21,14 @@ import {
   ElText,
   ElTooltip,
 } from 'element-plus'
+import { songConfigLoader } from '@/config/config'
+
 import 'element-plus/dist/index.css'
 
 type SongList = z.infer<typeof songSchema>
 
 // TODO 性能优化？
-const songlist = ref(
-  import.meta.env.SSR
-    ? await import('@config/song').then(d => d.songConfigLoader.load())
-    : songSchema.parse(await fetch('/data/songlist.json').then(res => res.json())),
-)
+const songlist = ref(await songConfigLoader.load())
 const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
 
 // 搜索处理

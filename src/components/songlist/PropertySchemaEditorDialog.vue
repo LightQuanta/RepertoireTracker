@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import type { PropertyType } from '@schema/song'
-import { types } from '@schema/song'
+import type { PropertyType } from '@/config/song'
 import {
   ElButton,
   ElCheckbox,
@@ -17,6 +16,7 @@ import {
   ElTableColumn,
   ElTag,
 } from 'element-plus'
+import { types } from '@/config/song'
 import PropertyEditorComponent from './PropertyEditorComponent.vue'
 
 const props = defineProps<{

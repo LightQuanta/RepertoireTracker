@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { PropertyType } from '@schema/song'
-import { getPropertySchema } from '@schema/song'
+import type { PropertyType } from '@/config/song'
+import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
   value: any

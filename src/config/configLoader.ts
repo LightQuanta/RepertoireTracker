@@ -1,28 +1,34 @@
 import type { z } from 'astro/zod'
 
-const configFiles = import.meta.glob(['/custom/config/*.json', '/src/config/*.json'], { eager: true })
+const configFiles = import.meta.glob(['/custom/config/*.json', '/src/config/*.json'])
 
 type ConfigLoader<T extends z.ZodObject<any>> = {
   load: () => Promise<z.output<T>>
   path: string
   schema: T
+  expose: boolean // 是否将配置文件暴露于`/public/${path}`下
 }
+
+// 所有已注册的配置文件加载器，用于生成路由
+const allConfigLoaders: ConfigLoader<any>[] = []
 
 /**
  * 创建配置文件加载器，读取 JSON 配置文件并由 ZodObject 进行转换
  * @param path 配置文件路径（`/custom/config/${path}`, `/src/config/${path}`）
  * @param schema 配置文件 zodObject（必须确保所有字段都有默认值或为可选值！）
+ * @param expose 是否将配置文件暴露于`/public/${path}`下
  */
-function createConfigLoader<T extends z.ZodObject<any>>(path: string, schema: T): ConfigLoader<T> {
-  return { load: async () => {
+function createConfigLoader<T extends z.ZodObject<any>>(path: string, schema: T, expose: boolean = false): ConfigLoader<T> {
+  const loader = { load: async () => {
     try {
-      const configModule = configFiles[`/custom/config/${path}`] ?? configFiles[`/src/config/${path}`]
+      const configLoader = configFiles[`/custom/config/${path}`] ?? configFiles[`/src/config/${path}`]
 
-      if (!configModule) {
+      if (!configLoader) {
         // console.warn(`配置文件 ${path} 未找到`)
         return schema.parse({})
       }
 
+      const configModule = await configLoader()
       const config = (configModule as any).default
 
       const result = schema.safeParse(config)
@@ -37,7 +43,10 @@ function createConfigLoader<T extends z.ZodObject<any>>(path: string, schema: T)
       console.error(error)
       return schema.parse({})
     }
-  }, path, schema }
+  }, path, schema, expose }
+
+  allConfigLoaders.push(loader)
+  return loader
 }
 
 /**
@@ -64,4 +73,4 @@ async function reloadConfig<T extends z.ZodObject<any>>(configLoader: ConfigLoad
   }
 }
 
-export { configFiles, createConfigLoader, reloadConfig }
+export { allConfigLoaders, configFiles, createConfigLoader, reloadConfig }

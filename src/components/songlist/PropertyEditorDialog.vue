@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PropertyType } from '@schema/song'
+import type { PropertyType } from '@/config/song'
 import { ElButton, ElDialog, ElText } from 'element-plus'
 import PropertyEditorComponent from './PropertyEditorComponent.vue'
 

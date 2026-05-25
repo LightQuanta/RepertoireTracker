@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { siteConfigLoader } from '@/config/config'
 import { reloadConfig } from '@/config/configLoader'
-import { siteConfigLoader } from '@/config/site'
 
 const count = ref(0)
 

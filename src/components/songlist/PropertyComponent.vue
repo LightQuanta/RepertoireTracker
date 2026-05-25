@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { PropertyKeys, songSchema } from '@schema/song'
 import type { z } from 'astro/zod'
 import type { Component } from 'vue'
+import type { PropertyKeys, songSchema } from '@/config/song'
 
 import BooleanProperty from './propertyComponents/BooleanProperty.vue'
 import DateProperty from './propertyComponents/DateProperty.vue'

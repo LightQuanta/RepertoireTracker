@@ -1,7 +1,7 @@
 ---
 import { ClientRouter } from 'astro:transitions'
 import ThemeToggle from '../components/ThemeToggle.vue'
-import { siteConfigLoader } from '../config/site'
+import { siteConfigLoader } from '../config/config'
 
 // TODO 解决HMR失效问题
 const config = await siteConfigLoader.load();

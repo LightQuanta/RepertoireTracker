@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { PropertyKeys, PropertyType } from '@schema/song'
 import type { Component } from 'vue'
+import type { PropertyKeys, PropertyType } from '@/config/song'
 
 import BooleanPropertyEditor from './propertyEditors/BooleanPropertyEditor.vue'
 import DatePropertyEditor from './propertyEditors/DatePropertyEditor.vue'
