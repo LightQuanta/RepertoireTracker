@@ -28,6 +28,8 @@ import { reloadConfig, resetConfig } from '@/config/configLoader'
 
 import 'element-plus/dist/index.css'
 
+const isDev = import.meta.env.DEV
+
 type SongList = z.infer<typeof songSchema>
 
 // TODO 性能优化？
@@ -407,6 +409,16 @@ async function handleSave() {
     saving.value = false
   }
 }
+
+function downloadJSON() {
+  const blob = new Blob([JSON.stringify(songlist.value, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'songdata.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}
 </script>
 
 <template>
@@ -437,26 +449,29 @@ async function handleSave() {
         </ElText>
       </div>
       <div class="flex items-center gap-2">
-        <ElButton size="small" @click="schemaDialogVisible = true">
+        <ElButton v-if="isDev" size="small" @click="schemaDialogVisible = true">
           编辑属性
         </ElButton>
-        <ElButton type="success" size="small" @click="addSong">
+        <ElButton v-if="isDev" type="success" size="small" @click="addSong">
           添加歌曲
         </ElButton>
-        <ElButton type="primary" size="small" :loading="saving" @click="handleSave">
+        <ElButton v-if="isDev" type="primary" size="small" :loading="saving" @click="handleSave">
           保存
         </ElButton>
-        <ElButton size="small" plain @click="clearAllSongs">
+        <ElButton v-if="isDev" size="small" plain @click="clearAllSongs">
           清空歌曲
         </ElButton>
-        <ElButton size="small" :loading="resetting" @click="handleReset">
+        <ElButton v-if="isDev" size="small" :loading="resetting" @click="handleReset">
           重置配置
         </ElButton>
-        <template v-if="selectedSongs.length > 0">
+        <template v-if="isDev && selectedSongs.length > 0">
           <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
             删除选中 ({{ selectedSongs.length }})
           </ElButton>
         </template>
+        <ElButton size="small" @click="downloadJSON">
+          导出 JSON
+        </ElButton>
         <ElTooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
           <ElSwitch
             v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
@@ -476,7 +491,7 @@ async function handleSave() {
       class="song-list-table w-full flex-1 overflow-hidden rounded-8px shadow-[0_10px_28px_rgb(31_41_55_/_8%)]"
       @selection-change="handleSelectionChange"
     >
-      <ElTableColumn type="selection" width="50" align="center" />
+      <ElTableColumn v-if="isDev" type="selection" width="50" align="center" />
       <ElTableColumn
         v-for="(property) in displayProperties" :key="property.id" :label="property.displayName"
         min-width="190" show-overflow-tooltip
@@ -485,7 +500,7 @@ async function handleSave() {
           <PropertyComponent :property="property" :value="song.properties[property.id] ?? property.default" />
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="130" fixed="right" align="center">
+      <ElTableColumn v-if="isDev" label="操作" width="130" fixed="right" align="center">
         <template #default="{ row: song }">
           <div class="flex items-center justify-center gap-1">
             <ElButton size="small" type="primary" link @click="openSongEditor(song)">
