@@ -20,13 +20,13 @@ const propertySchema = z.object({
   id: z.string(),
   // 显示名称
   displayName: z.string(),
-  // 是否可选
+  // 是否可选（必须和默认值二选一！）
   optional: z.boolean().optional(),
   // 是否展示给普通用户
   show: z.boolean().optional(),
   // 属性类型
   type: propertyType,
-  // 默认值
+  // 默认值（必须和可选二选一！）
   default: z.any().optional(),
   // 搜索权重
   searchWeight: z.number().default(0),

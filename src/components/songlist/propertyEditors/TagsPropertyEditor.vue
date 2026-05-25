@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PropertyType } from '@/config/song'
 import { ElInputTag } from 'element-plus'
+import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
   property: PropertyType
@@ -12,7 +13,14 @@ const emit = defineEmits<{
 }>()
 
 const tags = computed({
-  get: () => Array.isArray(props.modelValue) ? [...props.modelValue] : [],
+  get: () => {
+    const result = getPropertySchema(props.property).safeParse(props.modelValue)
+    if (!result.success) {
+      console.warn(`[TagsPropertyEditor] 属性 "${props.property.displayName}" 的值解析失败`, result.error.issues)
+      return []
+    }
+    return Array.isArray(result.data) ? [...result.data] : []
+  },
   set: (val) => {
     emit('update:modelValue', val)
   },

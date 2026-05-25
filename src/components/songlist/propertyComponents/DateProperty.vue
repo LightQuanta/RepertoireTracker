@@ -8,7 +8,12 @@ const props = defineProps<{
 }>()
 
 const displayText = computed(() => {
-  const parsed = getPropertySchema(props.property).parse(props.value)
+  const result = getPropertySchema(props.property).safeParse(props.value)
+  if (!result.success) {
+    console.warn(`[DateProperty] 属性 "${props.property.displayName}" 的值解析失败`, result.error.issues)
+    return '-'
+  }
+  const parsed = result.data
   if (parsed == null)
     return '-'
   const date = parsed instanceof Date ? parsed : new Date(parsed as string)

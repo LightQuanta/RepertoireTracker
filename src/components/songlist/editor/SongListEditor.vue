@@ -249,7 +249,7 @@ function saveSongProperties(properties: Record<string, any>) {
 function buildDefaultProperties() {
   const props: Record<string, any> = {}
   for (const property of songlist.value.properties) {
-    if (property.default !== undefined) {
+    if (!property.optional) {
       props[property.id] = JSON.parse(JSON.stringify(property.default))
     }
   }
@@ -417,7 +417,9 @@ async function handleSave() {
           首页
         </ElLink>
       </ElBreadcrumbItem>
-      <ElBreadcrumbItem><ElLink>编辑器</ElLink></ElBreadcrumbItem>
+      <ElBreadcrumbItem>
+        <ElLink>编辑器</ElLink>
+      </ElBreadcrumbItem>
     </ElBreadcrumb>
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>

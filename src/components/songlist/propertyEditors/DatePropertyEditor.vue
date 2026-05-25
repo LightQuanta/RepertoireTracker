@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PropertyType } from '@/config/song'
 import { ElDatePicker } from 'element-plus'
+import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
   property: PropertyType
@@ -13,9 +14,14 @@ const emit = defineEmits<{
 
 const dateValue = computed({
   get: () => {
-    if (!props.modelValue)
+    const result = getPropertySchema(props.property).safeParse(props.modelValue)
+    if (!result.success) {
+      console.warn(`[DatePropertyEditor] 属性 "${props.property.displayName}" 的值解析失败`, result.error.issues)
       return null
-    const date = props.modelValue instanceof Date ? props.modelValue : new Date(props.modelValue as string)
+    }
+    if (!result.data)
+      return null
+    const date = result.data instanceof Date ? result.data : new Date(result.data as string)
     return Number.isNaN(date.getTime()) ? null : date
   },
   set: (val: Date | null) => {

@@ -10,7 +10,12 @@ const props = defineProps<{
 }>()
 
 const displayTags = computed(() => {
-  const parsed = getPropertySchema(props.property).parse(props.value)
+  const result = getPropertySchema(props.property).safeParse(props.value)
+  if (!result.success) {
+    console.warn(`[TagsProperty] 属性 "${props.property.displayName}" 的值解析失败`, result.error.issues)
+    return []
+  }
+  const parsed = result.data
   return Array.isArray(parsed) ? (parsed as string[]) : []
 })
 </script>
