@@ -3,10 +3,10 @@ import { z } from 'astro/zod'
 const types = ['string', 'integer', 'float', 'boolean', 'tags', 'date'] as const
 const propertyType = z.enum(types)
 
-type PropertyKeys = typeof types[number]
+type SongPropertyKeys = typeof types[number]
 
 // 自定义歌曲属性类型映射
-const typeMap: Record<PropertyKeys, z.ZodType> = {
+const typeMap: Record<SongPropertyKeys, z.ZodType> = {
   string: z.string(),
   integer: z.int(),
   float: z.number(),
@@ -15,7 +15,7 @@ const typeMap: Record<PropertyKeys, z.ZodType> = {
   date: z.date(),
 }
 
-const propertySchema = z.object({
+const songPropertySchema = z.object({
   // 属性ID，用于序列化和反序列化
   id: z.string(),
   // 显示名称
@@ -32,9 +32,9 @@ const propertySchema = z.object({
   searchWeight: z.number().default(0),
 })
 
-type PropertyType = z.infer<typeof propertySchema>
+type SongProperty = z.infer<typeof songPropertySchema>
 
-function getPropertySchema(property: PropertyType): z.ZodType<any> {
+function getPropertySchema(property: SongProperty): z.ZodType<any> {
   const type = typeMap[property.type]
   if (property.optional ?? false) {
     return type.optional()
@@ -43,12 +43,13 @@ function getPropertySchema(property: PropertyType): z.ZodType<any> {
 }
 
 // 自定义歌曲属性
-const songPropertiesSchema = z.array(propertySchema).default([
+const songPropertiesSchema = z.array(songPropertySchema).default([
   {
     id: 'title',
     displayName: '标题',
     type: 'string',
     searchWeight: 150,
+    default: '',
   },
   {
     id: 'subtitle',
@@ -109,19 +110,27 @@ const songPropertiesSchema = z.array(propertySchema).default([
   },
 ])
 
-// 歌曲配置文件
 const songSchema = z.object({
+  id: z.uuidv4(),
+
+  // 可区分类型的自定义属性
+  properties: z.record(z.string(), z.any()).default({}),
+})
+
+// 单首歌曲信息
+type SongInfo = z.infer<typeof songSchema>
+
+// 歌曲配置文件
+const songDataSchema = z.object({
   // 所有歌曲共享的自定义属性
   properties: songPropertiesSchema,
 
   // 歌曲列表
-  songs: z.array(z.object({
-    id: z.uuidv4(),
-
-    // 可区分类型的自定义属性
-    properties: z.record(z.string(), z.any()).default({}),
-  })).default([]),
+  songs: z.array(songSchema).default([]),
 })
 
-export { getPropertySchema, propertySchema, songSchema, types }
-export type { PropertyKeys, PropertyType }
+// 所有歌曲的歌曲列表和对应属性定义
+type SongData = z.infer<typeof songDataSchema>
+
+export { getPropertySchema, songDataSchema, songPropertySchema, songSchema, types }
+export type { SongData, SongInfo, SongProperty, SongPropertyKeys }

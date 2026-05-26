@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { UseFuseOptions } from '@vueuse/integrations/useFuse'
-import type { z } from 'astro/zod'
-import type { PropertyType, songSchema } from '@/config/song'
+import type { SongData, SongInfo, SongProperty } from '@/config/song'
 import PropertyComponent from '@components/songlist/PropertyComponent.vue'
 import PropertyEditorDialog from '@components/songlist/PropertyEditorDialog.vue'
 import PropertySchemaEditorDialog from '@components/songlist/PropertySchemaEditorDialog.vue'
@@ -29,8 +28,6 @@ import { reloadConfig, resetConfig } from '@/config/configLoader'
 import 'element-plus/dist/index.css'
 
 const isDev = import.meta.env.DEV
-
-type SongList = z.infer<typeof songSchema>
 
 // TODO 性能优化？
 const songlist = ref(await songConfigLoader.load())
@@ -112,7 +109,7 @@ const fuseOptions = computed(() => ({
     threshold: 0.9,
   },
   matchAllWhenSearchEmpty: true,
-} as UseFuseOptions<SongList['songs'][0]>))
+} as UseFuseOptions<SongInfo>))
 
 const fuse = useFuse(debouncedSearchText, songs, fuseOptions)
 
@@ -184,21 +181,22 @@ watch(debouncedSearchText, (val) => {
   }
 })
 
-const p = params.page
-if (p) {
-  const n = Number(typeof p === 'string' ? p : p[0])
-  if (Number.isFinite(n))
-    currentPage.value = n
-}
+// TODO 这玩意到底能不能正常实现
+// const p = params.page
+// if (p) {
+//   const n = Number(typeof p === 'string' ? p : p[0])
+//   if (Number.isFinite(n))
+//     currentPage.value = n
+// }
 
-watch(currentPage, (val) => {
-  if (val === 1) {
-    delete params.page
-  }
-  else {
-    params.page = String(val)
-  }
-})
+// watch(currentPage, (val) => {
+//   if (val === 1) {
+//     delete params.page
+//   }
+//   else {
+//     params.page = String(val)
+//   }
+// })
 
 // 分页处理
 watch(debouncedSearchText, () => {
@@ -234,10 +232,10 @@ onKeyStroke('ArrowLeft', goToPrevPage)
 onKeyStroke('ArrowRight', goToNextPage)
 
 // 属性编辑器弹窗
-const editingSong = ref<SongList['songs'][number] | null>(null)
+const editingSong = ref<SongInfo | null>(null)
 const dialogVisible = ref(false)
 
-function openSongEditor(song: SongList['songs'][number]) {
+function openSongEditor(song: SongInfo) {
   editingSong.value = song
   dialogVisible.value = true
 }
@@ -252,14 +250,19 @@ function buildDefaultProperties() {
   const props: Record<string, any> = {}
   for (const property of songlist.value.properties) {
     if (!property.optional) {
-      props[property.id] = JSON.parse(JSON.stringify(property.default))
+      try {
+        props[property.id] = JSON.parse(JSON.stringify(property.default))
+      }
+      catch {
+        ElMessage.error(`属性 "${property.displayName}" 的默认值解析失败！`)
+      }
     }
   }
   return props
 }
 
 function addSong() {
-  const newSong: SongList['songs'][number] = {
+  const newSong: SongInfo = {
     id: crypto.randomUUID(),
     properties: buildDefaultProperties(),
   }
@@ -268,10 +271,10 @@ function addSong() {
 }
 
 // 多选与删除
-const selectedSongs = ref<SongList['songs'][number][]>([])
+const selectedSongs = ref<SongInfo[]>([])
 const tableRef = useTemplateRef('tableRef')
 
-function handleSelectionChange(rows: SongList['songs'][number][]) {
+function handleSelectionChange(rows: SongInfo[]) {
   selectedSongs.value = rows
 }
 
@@ -295,7 +298,7 @@ async function deleteSelectedSongs() {
   }
 }
 
-async function deleteSong(song: SongList['songs'][number]) {
+async function deleteSong(song: SongInfo) {
   try {
     await ElMessageBox.confirm(
       `确定删除「${song.properties.title ?? '未命名'}」吗？此操作不可撤销。`,
@@ -349,7 +352,7 @@ async function handleReset() {
   try {
     const defaultConfig = await resetConfig(songConfigLoader)
     if (defaultConfig) {
-      songlist.value = defaultConfig as SongList
+      songlist.value = defaultConfig as SongData
       selectedSongs.value = []
       tableRef.value?.clearSelection()
       ElMessage.success('已重置为默认配置')
@@ -369,7 +372,7 @@ async function handleReset() {
 // 属性定义管理
 const schemaDialogVisible = ref(false)
 
-function handlePropertiesUpdate(newProperties: PropertyType[]) {
+function handlePropertiesUpdate(newProperties: SongProperty[]) {
   const oldIds = new Set(songlist.value.properties.map(p => p.id))
   const newIds = new Set(newProperties.map(p => p.id))
 

@@ -10,18 +10,13 @@ export function useAppDark() {
       return
     }
 
+    // 临时禁用默认动画
+    document.documentElement.classList.add('darkModeSwitchAnimation')
+
     const diagonal = Math.hypot(
       document.documentElement.clientWidth,
       document.documentElement.clientHeight,
     )
-
-    // 临时禁用默认动画
-    const disableDefaultTransitionStyle = document.createElement('style')
-    disableDefaultTransitionStyle.textContent = `
-      ::view-transition-old(root), ::view-transition-new(root) {
-        animation: none !important;
-      }`
-    document.head.appendChild(disableDefaultTransitionStyle)
 
     const transition = document.startViewTransition(toggleDark)
     await transition.ready
@@ -36,7 +31,7 @@ export function useAppDark() {
     })
 
     await transition.finished
-    disableDefaultTransitionStyle.remove()
+    document.documentElement.classList.remove('darkModeSwitchAnimation')
   }
 
   return {

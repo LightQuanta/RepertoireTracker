@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import type { PropertyType } from '@/config/song'
+import type { SongProperty } from '@/config/song'
+import { ElText } from 'element-plus'
 import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
   value: any
-  property: PropertyType
+  property: SongProperty
 }>()
 
 const displayText = computed(() => {

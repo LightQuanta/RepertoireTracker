@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { z } from 'astro/zod'
 import type { Component } from 'vue'
-import type { PropertyKeys, songSchema } from '@/config/song'
+import type { SongProperty, SongPropertyKeys } from '@/config/song'
 
 import BooleanProperty from './propertyComponents/BooleanProperty.vue'
 import DateProperty from './propertyComponents/DateProperty.vue'
@@ -9,15 +8,12 @@ import NumberProperty from './propertyComponents/NumberProperty.vue'
 import StringProperty from './propertyComponents/StringProperty.vue'
 import TagsProperty from './propertyComponents/TagsProperty.vue'
 
-type SongList = z.infer<typeof songSchema>
-type SongProperty = SongList['properties'][number]
-
 defineProps<{
   property: SongProperty
   value: any
 }>()
 
-const componentMap: Record<PropertyKeys, Component> = {
+const componentMap: Record<SongPropertyKeys, Component> = {
   string: StringProperty,
   integer: NumberProperty,
   float: NumberProperty,

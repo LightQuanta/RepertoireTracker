@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { PropertyType } from '@/config/song'
+import type { SongProperty } from '@/config/song'
 import {
   ElButton,
   ElCheckbox,
@@ -21,16 +21,16 @@ import PropertyEditorComponent from './PropertyEditorComponent.vue'
 
 const props = defineProps<{
   visible: boolean
-  properties: PropertyType[]
+  properties: SongProperty[]
   songs: Record<string, any>[]
 }>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  'update:properties': [value: PropertyType[]]
+  'update:properties': [value: SongProperty[]]
 }>()
 
-const editingProperties = ref<PropertyType[]>([])
+const editingProperties = ref<SongProperty[]>([])
 
 watch(() => props.visible, (val) => {
   if (val) {
@@ -58,9 +58,9 @@ const typeLabels: Record<PropertyKey, string> = {
 
 // 单个属性编辑
 const propertyFormVisible = ref(false)
-const editingProperty = ref<PropertyType | null>(null)
+const editingProperty = ref<SongProperty | null>(null)
 const isNewProperty = ref(false)
-const propertyForm = ref<PropertyType>({
+const propertyForm = ref<SongProperty>({
   id: '',
   displayName: '',
   type: 'string',
@@ -87,7 +87,7 @@ function openNewProperty() {
   propertyFormVisible.value = true
 }
 
-function openEditProperty(property: PropertyType) {
+function openEditProperty(property: SongProperty) {
   isNewProperty.value = false
   editingProperty.value = property
   propertyForm.value = JSON.parse(JSON.stringify(property))
@@ -157,7 +157,7 @@ async function savePropertyForm() {
   propertyFormVisible.value = false
 }
 
-async function deleteProperty(property: PropertyType) {
+async function deleteProperty(property: SongProperty) {
   try {
     await ElMessageBox.confirm(`确定要删除属性"${property.displayName}"吗？已填写的歌曲数据不会被自动删除。`, '确认删除', {
       confirmButtonText: '删除',

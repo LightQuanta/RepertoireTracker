@@ -20,6 +20,12 @@ const config = await siteConfigLoader.load();
         <meta name="generator" content={Astro.generator} />
         <title>{config.title}</title>
 
+        <style is:global>
+        html.darkModeSwitchAnimation::view-transition-old(root), html.darkModeSwitchAnimation::view-transition-new(root) {
+            animation: none !important;
+        }
+        </style>
+
         <ClientRouter />
     </head>
     <body class="m-0 w-full h-full">

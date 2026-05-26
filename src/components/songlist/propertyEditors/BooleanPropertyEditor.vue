@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { PropertyType } from '@/config/song'
+import type { SongProperty } from '@/config/song'
 import { ElCheckbox } from 'element-plus'
 import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
-  property: PropertyType
+  property: SongProperty
   modelValue: any
 }>()
 

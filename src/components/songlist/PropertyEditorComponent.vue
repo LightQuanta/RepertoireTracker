@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Component } from 'vue'
-import type { PropertyKeys, PropertyType } from '@/config/song'
+import type { SongProperty, SongPropertyKeys } from '@/config/song'
 
 import BooleanPropertyEditor from './propertyEditors/BooleanPropertyEditor.vue'
 import DatePropertyEditor from './propertyEditors/DatePropertyEditor.vue'
@@ -9,7 +9,7 @@ import StringPropertyEditor from './propertyEditors/StringPropertyEditor.vue'
 import TagsPropertyEditor from './propertyEditors/TagsPropertyEditor.vue'
 
 defineProps<{
-  property: PropertyType
+  property: SongProperty
   modelValue: any
 }>()
 
@@ -17,7 +17,7 @@ defineEmits<{
   'update:modelValue': [value: any]
 }>()
 
-const componentMap: Record<PropertyKeys, Component> = {
+const componentMap: Record<SongPropertyKeys, Component> = {
   string: StringPropertyEditor,
   integer: NumberPropertyEditor,
   float: NumberPropertyEditor,

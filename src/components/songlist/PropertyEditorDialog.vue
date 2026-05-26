@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { PropertyType } from '@/config/song'
+import type { SongInfo, SongProperty } from '@/config/song'
 import { ElButton, ElDialog, ElText } from 'element-plus'
 import PropertyEditorComponent from './PropertyEditorComponent.vue'
 
 const props = defineProps<{
   visible: boolean
-  song: any
-  properties: PropertyType[]
+  song: SongInfo | null
+  properties: SongProperty[]
 }>()
 
 const emit = defineEmits<{
@@ -35,9 +35,13 @@ function handleSave() {
 <template>
   <ElDialog :model-value="visible" width="560px" align-center @update:model-value="emit('update:visible', $event)">
     <template #header>
-      <div class="text-18px font-600">
+      <ElText class="text-18px font-600" size="large">
         编辑歌曲属性
-      </div>
+      </ElText>
+      <br>
+      <ElText size="small" class="text-2.5" :type="song ? 'info' : 'danger'">
+        {{ song?.id ?? 'ERROR' }}
+      </ElText>
     </template>
 
     <div class="space-y-5 py-2">

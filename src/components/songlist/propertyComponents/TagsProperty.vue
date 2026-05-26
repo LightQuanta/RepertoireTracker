@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { PropertyType } from '@/config/song'
+import type { SongProperty } from '@/config/song'
 import { ElTag, ElText } from 'element-plus'
 import { computed } from 'vue'
 import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
   value: any
-  property: PropertyType
+  property: SongProperty
 }>()
 
 const displayTags = computed(() => {
