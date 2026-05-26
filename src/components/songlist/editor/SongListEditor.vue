@@ -5,12 +5,13 @@ import PropertyComponent from '@components/songlist/PropertyComponent.vue'
 import PropertyEditorDialog from '@components/songlist/PropertyEditorDialog.vue'
 import PropertySchemaEditorDialog from '@components/songlist/PropertySchemaEditorDialog.vue'
 
-import { onKeyStroke, onStartTyping, refDebounced, useUrlSearchParams } from '@vueuse/core'
+import { onKeyStroke, onStartTyping, refDebounced, useRefHistory, useUrlSearchParams } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import {
   ElBreadcrumb,
   ElBreadcrumbItem,
   ElButton,
+  ElDivider,
   ElInput,
   ElLink,
   ElMessage,
@@ -32,6 +33,12 @@ const isDev = import.meta.env.DEV
 // TODO 性能优化？
 const songlist = ref(await songConfigLoader.load())
 const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
+
+const { undo, redo, canUndo, canRedo } = useRefHistory(songlist, {
+  deep: true,
+  clone: true,
+  capacity: 100,
+})
 
 // 搜索处理
 const searchInput = useTemplateRef('searchInput')
@@ -231,6 +238,20 @@ function goToNextPage(e: KeyboardEvent) {
 onKeyStroke('ArrowLeft', goToPrevPage)
 onKeyStroke('ArrowRight', goToNextPage)
 
+// 撤销 / 重做
+onKeyStroke('z', (e) => {
+  if (isFocusedElementEditable())
+    return
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey) {
+    e.preventDefault()
+    redo()
+  }
+  else if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+    e.preventDefault()
+    undo()
+  }
+})
+
 // 属性编辑器弹窗
 const editingSong = ref<SongInfo | null>(null)
 const dialogVisible = ref(false)
@@ -330,7 +351,7 @@ async function clearAllSongs() {
   }
   try {
     await ElMessageBox.confirm(
-      `确定清空全部 ${songlist.value.songs.length} 首歌曲吗？此操作不可撤销。`,
+      `确定清空全部 ${songlist.value.songs.length} 首歌曲吗？`,
       '确认清空',
       { confirmButtonText: '清空', cancelButtonText: '取消', type: 'warning' },
     )
@@ -462,29 +483,45 @@ function downloadJSON() {
         </ElText>
       </div>
       <div class="flex items-center gap-2">
-        <ElButton v-if="isDev" size="small" @click="schemaDialogVisible = true">
-          编辑属性
-        </ElButton>
-        <ElButton v-if="isDev" type="success" size="small" @click="addSong">
-          添加歌曲
-        </ElButton>
-        <ElButton v-if="isDev" type="primary" size="small" :loading="saving" @click="handleSave">
-          保存
-        </ElButton>
-        <ElButton v-if="isDev" size="small" plain @click="clearAllSongs">
-          清空歌曲
-        </ElButton>
-        <ElButton v-if="isDev" size="small" :loading="resetting" @click="handleReset">
-          重置配置
-        </ElButton>
-        <template v-if="isDev && selectedSongs.length > 0">
-          <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
-            删除选中 ({{ selectedSongs.length }})
+        <template v-if="isDev">
+          <!-- TODO 优化布局和样式 -->
+          <ElButton size="small" type="primary" @click="schemaDialogVisible = true">
+            编辑属性
+          </ElButton>
+          <ElDivider direction="vertical" />
+          <ElButton size="small" :disabled="!canUndo" @click="undo">
+            撤销
+          </ElButton>
+          <ElButton size="small" :disabled="!canRedo" @click="redo">
+            重做
+          </ElButton>
+          <ElDivider direction="vertical" />
+          <ElButton type="primary" size="small" @click="addSong">
+            添加歌曲
+          </ElButton>
+          <template v-if="selectedSongs.length > 0">
+            <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
+              删除选中 ({{ selectedSongs.length }})
+            </ElButton>
+          </template>
+          <ElButton size="small" type="danger" @click="clearAllSongs">
+            清空歌曲
+          </ElButton>
+          <ElDivider direction="vertical" />
+          <ElButton size="small" type="danger" :loading="resetting" @click="handleReset">
+            重置配置
+          </ElButton>
+          <ElButton type="success" size="small" :loading="saving" @click="handleSave">
+            保存
           </ElButton>
         </template>
+
+        <ElDivider direction="vertical" />
         <ElButton size="small" @click="downloadJSON">
           导出 JSON
         </ElButton>
+        <ElDivider direction="vertical" />
+
         <ElTooltip :content="searchMethod === 'fuse' ? '模糊搜索（Fuse.js），支持容错匹配' : '分词匹配（空格分词，任一匹配即可）'" placement="top">
           <ElSwitch
             v-model="searchMethod" active-value="fuse" inactive-value="contains" active-text="模糊搜索"
