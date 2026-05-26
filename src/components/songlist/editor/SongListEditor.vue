@@ -234,6 +234,7 @@ onKeyStroke('ArrowRight', goToNextPage)
 // 属性编辑器弹窗
 const editingSong = ref<SongInfo | null>(null)
 const dialogVisible = ref(false)
+const isNewSong = ref(false)
 
 function openSongEditor(song: SongInfo) {
   editingSong.value = song
@@ -243,8 +244,17 @@ function openSongEditor(song: SongInfo) {
 function saveSongProperties(properties: Record<string, any>) {
   if (editingSong.value) {
     editingSong.value.properties = properties
+    if (isNewSong.value) {
+      songlist.value.songs.push(editingSong.value)
+      isNewSong.value = false
+    }
   }
 }
+
+watch(dialogVisible, (val) => {
+  if (!val)
+    isNewSong.value = false
+})
 
 function buildDefaultProperties() {
   const props: Record<string, any> = {}
@@ -266,7 +276,7 @@ function addSong() {
     id: crypto.randomUUID(),
     properties: buildDefaultProperties(),
   }
-  songlist.value.songs.push(newSong)
+  isNewSong.value = true
   openSongEditor(newSong)
 }
 
@@ -283,7 +293,7 @@ async function deleteSelectedSongs() {
     return
   try {
     await ElMessageBox.confirm(
-      `确定删除选中的 ${selectedSongs.value.length} 首歌曲吗？此操作不可撤销。`,
+      `确定删除选中的 ${selectedSongs.value.length} 首歌曲吗？`,
       '确认删除',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
     )
@@ -301,12 +311,12 @@ async function deleteSelectedSongs() {
 async function deleteSong(song: SongInfo) {
   try {
     await ElMessageBox.confirm(
-      `确定删除「${song.properties.title ?? '未命名'}」吗？此操作不可撤销。`,
+      `确定删除「${song.id}」吗？`,
       '确认删除',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
     )
     songlist.value.songs = songlist.value.songs.filter(s => s.id !== song.id)
-    ElMessage.success('已删除')
+    ElMessage.success(`已删除 ${song.id}`)
   }
   catch {
     // 用户取消

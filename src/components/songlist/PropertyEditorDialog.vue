@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SongInfo, SongProperty } from '@/config/song'
-import { ElButton, ElDialog, ElText } from 'element-plus'
+import { ElButton, ElDialog, ElMessage, ElText } from 'element-plus'
 import PropertyEditorComponent from './PropertyEditorComponent.vue'
 
 const props = defineProps<{
@@ -28,6 +28,7 @@ function handleClose() {
 
 function handleSave() {
   emit('save', editingProperties.value)
+  ElMessage.success(`成功更新 ${props.song?.id}`)
   handleClose()
 }
 </script>
