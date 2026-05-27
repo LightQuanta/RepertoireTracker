@@ -4,8 +4,8 @@ import type { SongData, SongInfo, SongProperty } from '@/config/song'
 import PropertyComponent from '@components/songlist/PropertyComponent.vue'
 import PropertyEditorDialog from '@components/songlist/PropertyEditorDialog.vue'
 import PropertySchemaEditorDialog from '@components/songlist/PropertySchemaEditorDialog.vue'
+import { onKeyStroke, onStartTyping, refDebounced, useEventListener, useFileDialog, useRefHistory, useUrlSearchParams } from '@vueuse/core'
 
-import { onKeyStroke, onStartTyping, refDebounced, useRefHistory, useUrlSearchParams } from '@vueuse/core'
 import { useFuse } from '@vueuse/integrations/useFuse'
 import {
   ElBreadcrumb,
@@ -23,21 +23,54 @@ import {
   ElText,
   ElTooltip,
 } from 'element-plus'
-import { songConfigLoader } from '@/config/config'
+import { songDataLoader } from '@/config/config'
 import { reloadConfig, resetConfig } from '@/config/configLoader'
 
 import 'element-plus/dist/index.css'
 
 const isDev = import.meta.env.DEV
 
-// TODO 性能优化？
-const songlist = ref(await songConfigLoader.load())
-const displayProperties = computed(() => songlist.value.properties.filter(property => property.show ?? true))
+const STORAGE_KEY = 'songlist-editor-backup'
 
-const { undo, redo, canUndo, canRedo } = useRefHistory(songlist, {
+let data: SongData | undefined
+let loadedFromBackup = false
+try {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (stored) {
+    const parsed = songDataLoader.schema.safeParse(JSON.parse(stored))
+    if (parsed.success) {
+      data = parsed.data
+      loadedFromBackup = true
+    }
+  }
+}
+catch {
+}
+
+const songData = ref<SongData>(data ?? await songDataLoader.load())
+const displayProperties = computed(() => songData.value.properties.filter(property => property.show ?? true))
+
+const history = useRefHistory(songData, {
   deep: true,
   clone: true,
-  capacity: 100,
+})
+
+const { undo, redo, canUndo, canRedo } = history
+const isDirty = ref(loadedFromBackup)
+
+watch(songData, (val) => {
+  isDirty.value = true
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(val))
+  }
+  catch {
+  }
+}, { deep: true })
+
+useEventListener(window, 'beforeunload', (e) => {
+  if (isDirty.value) {
+    e.preventDefault()
+  }
 })
 
 // 搜索处理
@@ -102,11 +135,11 @@ function isFocusedElementEditable() {
 const inputText = ref('')
 const debouncedSearchText = refDebounced(inputText, 200)
 
-const songs = computed(() => songlist.value?.songs ?? [])
+const songs = computed(() => songData.value?.songs ?? [])
 
 const fuseOptions = computed(() => ({
   fuseOptions: {
-    keys: songlist.value.properties
+    keys: songData.value.properties
       .filter(property => property.searchWeight > 0)
       .map(property => ({
         name: `properties.${property.id}`,
@@ -132,7 +165,7 @@ const containsFilteredSongs = computed(() => {
   }
 
   const tokens = text.toLowerCase().split(/\s+/).filter(Boolean)
-  const searchablePropertyIds = songlist.value.properties
+  const searchablePropertyIds = songData.value.properties
     .filter(p => p.searchWeight > 0)
     .map(p => p.id)
 
@@ -252,6 +285,14 @@ onKeyStroke('z', (e) => {
   }
 })
 
+// Ctrl+S 保存
+onKeyStroke('s', (e) => {
+  if ((e.ctrlKey || e.metaKey) && !isFocusedElementEditable()) {
+    e.preventDefault()
+    handleSave()
+  }
+})
+
 // 属性编辑器弹窗
 const editingSong = ref<SongInfo | null>(null)
 const dialogVisible = ref(false)
@@ -266,7 +307,7 @@ function saveSongProperties(properties: Record<string, any>) {
   if (editingSong.value) {
     editingSong.value.properties = properties
     if (isNewSong.value) {
-      songlist.value.songs.push(editingSong.value)
+      songData.value.songs.push(editingSong.value)
       isNewSong.value = false
     }
   }
@@ -279,7 +320,7 @@ watch(dialogVisible, (val) => {
 
 function buildDefaultProperties() {
   const props: Record<string, any> = {}
-  for (const property of songlist.value.properties) {
+  for (const property of songData.value.properties) {
     if (!property.optional) {
       try {
         props[property.id] = JSON.parse(JSON.stringify(property.default))
@@ -309,9 +350,13 @@ function handleSelectionChange(rows: SongInfo[]) {
   selectedSongs.value = rows
 }
 
+const showingDeleteSelectedSongsDialog = ref(false)
+
 async function deleteSelectedSongs() {
   if (selectedSongs.value.length === 0)
     return
+
+  showingDeleteSelectedSongsDialog.value = true
   try {
     await ElMessageBox.confirm(
       `确定删除选中的 ${selectedSongs.value.length} 首歌曲吗？`,
@@ -319,7 +364,7 @@ async function deleteSelectedSongs() {
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
     )
     const ids = new Set(selectedSongs.value.map(s => s.id))
-    songlist.value.songs = songlist.value.songs.filter(s => !ids.has(s.id))
+    songData.value.songs = songData.value.songs.filter(s => !ids.has(s.id))
     selectedSongs.value = []
     tableRef.value?.clearSelection()
     ElMessage.success(`已删除 ${ids.size} 首歌曲`)
@@ -327,7 +372,17 @@ async function deleteSelectedSongs() {
   catch {
     // 用户取消
   }
+  finally {
+    showingDeleteSelectedSongsDialog.value = false
+  }
 }
+
+onKeyStroke('Delete', (e) => {
+  if (!isFocusedElementEditable() && selectedSongs.value.length > 0 && !showingDeleteSelectedSongsDialog.value) {
+    e.preventDefault()
+    deleteSelectedSongs()
+  }
+})
 
 async function deleteSong(song: SongInfo) {
   try {
@@ -336,7 +391,7 @@ async function deleteSong(song: SongInfo) {
       '确认删除',
       { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
     )
-    songlist.value.songs = songlist.value.songs.filter(s => s.id !== song.id)
+    songData.value.songs = songData.value.songs.filter(s => s.id !== song.id)
     ElMessage.success(`已删除 ${song.id}`)
   }
   catch {
@@ -345,17 +400,17 @@ async function deleteSong(song: SongInfo) {
 }
 
 async function clearAllSongs() {
-  if (songlist.value.songs.length === 0) {
+  if (songData.value.songs.length === 0) {
     ElMessage.info('歌单已经是空的')
     return
   }
   try {
     await ElMessageBox.confirm(
-      `确定清空全部 ${songlist.value.songs.length} 首歌曲吗？`,
+      `确定清空全部 ${songData.value.songs.length} 首歌曲吗？`,
       '确认清空',
       { confirmButtonText: '清空', cancelButtonText: '取消', type: 'warning' },
     )
-    songlist.value.songs = []
+    songData.value.songs = []
     selectedSongs.value = []
     tableRef.value?.clearSelection()
     ElMessage.success('已清空全部歌曲')
@@ -370,7 +425,7 @@ const resetting = ref(false)
 async function handleReset() {
   try {
     await ElMessageBox.confirm(
-      '确定重置配置文件吗？自定义的歌曲数据和属性将丢失，回退到默认配置。',
+      '确定重置并保存配置文件吗？所有自定义的歌曲数据和属性将丢失',
       '确认重置',
       { confirmButtonText: '重置', cancelButtonText: '取消', type: 'warning' },
     )
@@ -381,11 +436,22 @@ async function handleReset() {
 
   resetting.value = true
   try {
-    const defaultConfig = await resetConfig(songConfigLoader)
+    const defaultConfig = await resetConfig(songDataLoader)
     if (defaultConfig) {
-      songlist.value = defaultConfig as SongData
+      songData.value = defaultConfig as SongData
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+      catch {
+      }
       selectedSongs.value = []
       tableRef.value?.clearSelection()
+
+      // 抽象
+      nextTick(() => {
+        isDirty.value = false
+      })
+
       ElMessage.success('已重置为默认配置')
     }
     else {
@@ -404,10 +470,10 @@ async function handleReset() {
 const schemaDialogVisible = ref(false)
 
 function handlePropertiesUpdate(newProperties: SongProperty[]) {
-  const oldIds = new Set(songlist.value.properties.map(p => p.id))
+  const oldIds = new Set(songData.value.properties.map(p => p.id))
   const newIds = new Set(newProperties.map(p => p.id))
 
-  for (const song of songlist.value.songs) {
+  for (const song of songData.value.songs) {
     for (const id of oldIds) {
       if (!newIds.has(id)) {
         delete song.properties[id]
@@ -420,7 +486,7 @@ function handlePropertiesUpdate(newProperties: SongProperty[]) {
     }
   }
 
-  songlist.value.properties = newProperties
+  songData.value.properties = newProperties
 }
 
 const saving = ref(false)
@@ -428,8 +494,14 @@ const saving = ref(false)
 async function handleSave() {
   saving.value = true
   try {
-    const success = await reloadConfig(songConfigLoader, songlist.value)
+    const success = await reloadConfig(songDataLoader, songData.value)
     if (success) {
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      }
+      catch {
+      }
+      isDirty.value = false
       ElMessage.success('保存成功')
     }
     else {
@@ -444,8 +516,30 @@ async function handleSave() {
   }
 }
 
+const discardding = ref(false)
+
+function discardChanges() {
+  ElMessageBox.confirm('确定放弃修改吗？', {
+    confirmButtonText: '确认放弃',
+    cancelButtonText: '取消',
+    type: 'warning',
+  }).then(async () => {
+    discardding.value = true
+    songData.value = await songDataLoader.load()
+    try {
+      localStorage.removeItem(STORAGE_KEY)
+    }
+    catch {
+    }
+    nextTick(() => {
+      isDirty.value = false
+    })
+    discardding.value = false
+  })
+}
+
 function downloadJSON() {
-  const blob = new Blob([JSON.stringify(songlist.value, null, 2)], { type: 'application/json' })
+  const blob = new Blob([JSON.stringify(songData.value, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -453,6 +547,34 @@ function downloadJSON() {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+const { open: importJSON, onChange: onImportFileChange } = useFileDialog({
+  accept: '.json',
+})
+
+onImportFileChange(async (files) => {
+  const file = files?.[0]
+  if (!file)
+    return
+
+  try {
+    const text = await file.text()
+    const result = songDataLoader.schema.safeParse(JSON.parse(text))
+
+    if (!result.success) {
+      ElMessage.error('导入失败：文件格式与歌单数据结构不匹配')
+      console.warn('[Import] 导入的数据校验失败', result.error.issues)
+      return
+    }
+
+    songData.value = result.data as SongData
+    ElMessage.success(`已导入 ${result.data.songs.length} 首歌曲`)
+  }
+  catch (error) {
+    ElMessage.error('导入失败：文件格式错误')
+    console.error(error)
+  }
+})
 </script>
 
 <template>
@@ -469,9 +591,14 @@ function downloadJSON() {
     </ElBreadcrumb>
     <header class="mb-3.5 flex items-center justify-between gap-4 max-md:flex-col max-md:items-start">
       <div>
-        <ElText class="mb-4 text-22px font-650 leading-1.25 mb-4">
-          歌单编辑
-        </ElText>
+        <div class="flex items-center gap-2">
+          <ElText class="" size="large">
+            歌单编辑
+          </ElText>
+          <ElText size="small" :type="isDirty ? 'danger' : 'success'">
+            {{ isDirty ? '● 未保存' : '● 已保存' }}
+          </ElText>
+        </div>
         <ElText class="mt-1.5 text-13px" type="info">
           <template v-if="searchPerformed">
             已展示 {{ filteredSongs.length }} / {{ songs.length }} 首歌曲 · 搜索用时 {{
@@ -511,12 +638,19 @@ function downloadJSON() {
           <ElButton size="small" type="danger" :loading="resetting" @click="handleReset">
             重置配置
           </ElButton>
-          <ElButton type="success" size="small" :loading="saving" @click="handleSave">
+          <ElDivider direction="vertical" />
+          <ElButton size="small" type="danger" :disabled="!isDirty" :loading="discardding" @click="discardChanges">
+            放弃修改
+          </ElButton>
+          <ElButton type="success" size="small" :disabled="!isDirty" :loading="saving" @click="handleSave">
             保存
           </ElButton>
         </template>
 
         <ElDivider direction="vertical" />
+        <ElButton size="small" @click="importJSON()">
+          导入 JSON
+        </ElButton>
         <ElButton size="small" @click="downloadJSON">
           导出 JSON
         </ElButton>
@@ -565,13 +699,13 @@ function downloadJSON() {
     </ElTable>
 
     <PropertyEditorDialog
-      v-model:visible="dialogVisible" :song="editingSong" :properties="songlist.properties"
+      v-model:visible="dialogVisible" :song="editingSong" :properties="songData.properties"
       @save="saveSongProperties"
     />
 
     <PropertySchemaEditorDialog
-      v-model:visible="schemaDialogVisible" :properties="songlist.properties"
-      :songs="songlist.songs" @update:properties="handlePropertiesUpdate"
+      v-model:visible="schemaDialogVisible" :properties="songData.properties"
+      :songs="songData.songs" @update:properties="handlePropertiesUpdate"
     />
 
     <div class="pagination-wrapper">

@@ -26,6 +26,16 @@ export default defineConfig({
         dir: 'src/dev-server',
         include: ['**/*.ts'],
       }),
+
+      // TODO 为SongListEditor.vue抑制HMR使用，但该实现是否合适？
+      {
+        name: 'suppress-custom-config-hmr',
+        handleHotUpdate({ file }) {
+          if (file.includes('\\custom\\config\\') || file.includes('/custom/config/')) {
+            return []
+          }
+        },
+      },
     ],
     server: {
       proxy: {
