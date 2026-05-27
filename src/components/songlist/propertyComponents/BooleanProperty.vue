@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SongProperty } from '@/config/song'
-import { ElText } from 'element-plus'
+import { ElSwitch } from 'element-plus'
 import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
@@ -8,21 +8,19 @@ const props = defineProps<{
   property: SongProperty
 }>()
 
-const displayText = computed(() => {
+const checked = computed(() => {
   const result = getPropertySchema(props.property).safeParse(props.value)
   if (!result.success) {
     console.warn(`[BooleanProperty] 属性 "${props.property.displayName}" 的值解析失败`, result.error.issues)
-    return '-'
+    return false
   }
   const parsed = result.data
   if (parsed == null)
-    return '-'
-  return String(parsed)
+    return false
+  return result.data
 })
 </script>
 
 <template>
-  <ElText class="max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-    {{ displayText }}
-  </ElText>
+  <ElSwitch v-model="checked" disabled />
 </template>

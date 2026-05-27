@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { SongProperty } from '@/config/song'
-import { ElCheckbox } from 'element-plus'
+import { ElSwitch } from 'element-plus'
 import { getPropertySchema } from '@/config/song'
 
 const props = defineProps<{
@@ -28,5 +28,5 @@ const checked = computed({
 </script>
 
 <template>
-  <ElCheckbox v-model="checked" :label="property.displayName" />
+  <ElSwitch v-model="checked" :label="checked ? 'true' : 'false'" />
 </template>
