@@ -423,46 +423,48 @@ async function clearAllSongs() {
 const resetting = ref(false)
 
 async function handleReset() {
-  try {
-    await ElMessageBox.confirm(
-      '确定重置并保存配置文件吗？所有自定义的歌曲数据和属性将丢失',
-      '确认重置',
-      { confirmButtonText: '重置', cancelButtonText: '取消', type: 'warning' },
-    )
-  }
-  catch {
-    return
-  }
-
-  resetting.value = true
-  try {
-    const defaultConfig = await resetConfig(songDataLoader)
-    if (defaultConfig) {
-      songData.value = defaultConfig as SongData
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-      }
-      catch {
-      }
-      selectedSongs.value = []
-      tableRef.value?.clearSelection()
-
-      // 抽象
-      nextTick(() => {
-        isDirty.value = false
-      })
-
-      ElMessage.success('已重置为默认配置')
+  if (import.meta.env.DEV) {
+    try {
+      await ElMessageBox.confirm(
+        '确定重置并保存配置文件吗？所有自定义的歌曲数据和属性将丢失',
+        '确认重置',
+        { confirmButtonText: '重置', cancelButtonText: '取消', type: 'warning' },
+      )
     }
-    else {
-      ElMessage.error('重置失败，请查看控制台日志')
+    catch {
+      return
     }
-  }
-  catch {
-    ElMessage.error('重置失败，请检查开发服务器是否正常运行')
-  }
-  finally {
-    resetting.value = false
+
+    resetting.value = true
+    try {
+      const defaultConfig = await resetConfig(songDataLoader)
+      if (defaultConfig) {
+        songData.value = defaultConfig as SongData
+        try {
+          localStorage.removeItem(STORAGE_KEY)
+        }
+        catch {
+        }
+        selectedSongs.value = []
+        tableRef.value?.clearSelection()
+
+        // 抽象
+        nextTick(() => {
+          isDirty.value = false
+        })
+
+        ElMessage.success('已重置为默认配置')
+      }
+      else {
+        ElMessage.error('重置失败，请查看控制台日志')
+      }
+    }
+    catch {
+      ElMessage.error('重置失败，请检查开发服务器是否正常运行')
+    }
+    finally {
+      resetting.value = false
+    }
   }
 }
 
@@ -492,27 +494,29 @@ function handlePropertiesUpdate(newProperties: SongProperty[]) {
 const saving = ref(false)
 
 async function handleSave() {
-  saving.value = true
-  try {
-    const success = await reloadConfig(songDataLoader, songData.value)
-    if (success) {
-      try {
-        localStorage.removeItem(STORAGE_KEY)
+  if (import.meta.env.DEV) {
+    saving.value = true
+    try {
+      const success = await reloadConfig(songDataLoader, songData.value)
+      if (success) {
+        try {
+          localStorage.removeItem(STORAGE_KEY)
+        }
+        catch {
+        }
+        isDirty.value = false
+        ElMessage.success('保存成功')
       }
-      catch {
+      else {
+        ElMessage.error('保存失败，请查看控制台日志')
       }
-      isDirty.value = false
-      ElMessage.success('保存成功')
     }
-    else {
-      ElMessage.error('保存失败，请查看控制台日志')
+    catch {
+      ElMessage.error('保存失败，请检查开发服务器是否正常运行')
     }
-  }
-  catch {
-    ElMessage.error('保存失败，请检查开发服务器是否正常运行')
-  }
-  finally {
-    saving.value = false
+    finally {
+      saving.value = false
+    }
   }
 }
 
@@ -610,42 +614,42 @@ onImportFileChange(async (files) => {
         </ElText>
       </div>
       <div class="flex items-center gap-2">
-        <template v-if="isDev">
-          <!-- TODO 优化布局和样式 -->
-          <ElButton size="small" type="primary" @click="schemaDialogVisible = true">
-            编辑属性
-          </ElButton>
-          <ElDivider direction="vertical" />
-          <ElButton size="small" :disabled="!canUndo" @click="undo">
-            撤销
-          </ElButton>
-          <ElButton size="small" :disabled="!canRedo" @click="redo">
-            重做
-          </ElButton>
-          <ElDivider direction="vertical" />
-          <ElButton type="primary" size="small" @click="addSong">
-            添加歌曲
-          </ElButton>
-          <template v-if="selectedSongs.length > 0">
-            <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
-              删除选中 ({{ selectedSongs.length }})
-            </ElButton>
-          </template>
-          <ElButton size="small" type="danger" @click="clearAllSongs">
-            清空歌曲
-          </ElButton>
-          <ElDivider direction="vertical" />
-          <ElButton size="small" type="danger" :loading="resetting" @click="handleReset">
-            重置配置
-          </ElButton>
-          <ElDivider direction="vertical" />
-          <ElButton size="small" type="danger" :disabled="!isDirty" :loading="discardding" @click="discardChanges">
-            放弃修改
-          </ElButton>
-          <ElButton type="success" size="small" :disabled="!isDirty" :loading="saving" @click="handleSave">
-            保存
+        <!-- TODO 优化布局和样式 -->
+        <ElButton size="small" type="primary" @click="schemaDialogVisible = true">
+          编辑属性
+        </ElButton>
+        <ElDivider direction="vertical" />
+        <ElButton size="small" :disabled="!canUndo" @click="undo">
+          撤销
+        </ElButton>
+        <ElButton size="small" :disabled="!canRedo" @click="redo">
+          重做
+        </ElButton>
+        <ElDivider direction="vertical" />
+        <ElButton type="primary" size="small" @click="addSong">
+          添加歌曲
+        </ElButton>
+        <template v-if="selectedSongs.length > 0">
+          <ElButton type="danger" size="small" plain @click="deleteSelectedSongs">
+            删除选中 ({{ selectedSongs.length }})
           </ElButton>
         </template>
+        <ElButton size="small" type="danger" @click="clearAllSongs">
+          清空歌曲
+        </ElButton>
+        <ElDivider direction="vertical" />
+
+        <ElButton v-if="isDev" size="small" type="danger" :loading="resetting" @click="handleReset">
+          重置配置
+        </ElButton>
+        <ElDivider v-if="isDev" direction="vertical" />
+
+        <ElButton size="small" type="danger" :disabled="!isDirty" :loading="discardding" @click="discardChanges">
+          放弃修改
+        </ElButton>
+        <ElButton v-if="isDev" type="success" size="small" :disabled="!isDirty" :loading="saving" @click="handleSave">
+          保存
+        </ElButton>
 
         <ElDivider direction="vertical" />
         <ElButton size="small" @click="importJSON()">
