@@ -257,10 +257,10 @@ async function deleteProperty(property: SongProperty) {
         </ElSelect>
       </ElFormItem>
       <ElFormItem label="是否可选">
-        <ElCheckbox v-model="propertyForm.optional" :label="propertyForm.optional ? '可选' : '必填'" />
+        <ElCheckbox v-model="propertyForm.optional" />
       </ElFormItem>
       <ElFormItem label="是否显示">
-        <ElCheckbox v-model="propertyForm.show" :label="propertyForm.show ? '显示' : '隐藏'" />
+        <ElCheckbox v-model="propertyForm.show" />
       </ElFormItem>
       <ElFormItem label="搜索权重">
         <ElInputNumber v-model="propertyForm.searchWeight" :min="0" :max="999" class="w-full" />
