@@ -475,7 +475,9 @@ function handlePropertiesUpdate(newProperties: SongProperty[]) {
   const oldIds = new Set(songData.value.properties.map(p => p.id))
   const newIds = new Set(newProperties.map(p => p.id))
 
-  for (const song of songData.value.songs) {
+  const cloned = JSON.parse(JSON.stringify(songData.value))
+
+  for (const song of cloned.songs) {
     for (const id of oldIds) {
       if (!newIds.has(id)) {
         delete song.properties[id]
@@ -488,7 +490,8 @@ function handlePropertiesUpdate(newProperties: SongProperty[]) {
     }
   }
 
-  songData.value.properties = newProperties
+  cloned.properties = newProperties
+  songData.value = cloned as SongData
 }
 
 const saving = ref(false)

@@ -159,7 +159,7 @@ async function savePropertyForm() {
 
 async function deleteProperty(property: SongProperty) {
   try {
-    await ElMessageBox.confirm(`确定要删除属性"${property.displayName}"吗？已填写的歌曲数据不会被自动删除。`, '确认删除', {
+    await ElMessageBox.confirm(`确定要删除属性"${property.displayName}"吗？已有歌曲的对应属性也会被删除！`, '确认删除', {
       confirmButtonText: '删除',
       cancelButtonText: '取消',
       type: 'warning',
